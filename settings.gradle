@@ -1,0 +1,5 @@
+rootProject.name = "lambda-job-scheduler"
+
+include "luartz"
+include "luartz-sample-app"
+

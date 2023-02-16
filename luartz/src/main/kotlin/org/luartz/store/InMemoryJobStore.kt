@@ -11,7 +11,11 @@ class InMemoryJobStore : MutableJobStore {
         jobsByName.getOrPut(job.name) { mutableListOf() }.add(job)
     }
 
-    override fun findJobsByName(jobName: String): List<Job> {
+    override fun getJob(jobId: String): Job? {
+        return jobsById[jobId]
+    }
+
+    override fun getJobsByName(jobName: String): List<Job> {
         return jobsByName[jobName] ?: emptyList()
     }
 

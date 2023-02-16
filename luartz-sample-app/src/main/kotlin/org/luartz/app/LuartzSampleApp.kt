@@ -52,6 +52,6 @@ fun main() {
     )
 
     // Print jobs
-    val jobs = store.findJobsByName("RecurrentTestJob")
+    val jobs = store.getJobsByName("RecurrentTestJob")
     println(jobs)
 }

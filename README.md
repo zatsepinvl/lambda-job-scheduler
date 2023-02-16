@@ -1,2 +1,2 @@
-# Lambda Job Scheduler - Luartz
+# Luartz - Lambda Job Scheduler
 Quartz-like job scheduler based on AWS Lambda

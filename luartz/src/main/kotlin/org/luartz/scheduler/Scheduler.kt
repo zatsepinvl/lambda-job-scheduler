@@ -1,11 +1,11 @@
 package org.luartz.scheduler
 
-import org.luartz.job.Job
-import org.luartz.job.definition.JobDefinition
-import org.luartz.trigger.Trigger
+import org.luartz.store.JobStore
 
 interface Scheduler {
-    fun schedule(definition: JobDefinition, trigger: Trigger): Job
-
-    fun execute(definition: JobDefinition): Job
+    fun schedule(request: JobScheduleRequest)
+    fun submit(request: JobSubmitRequest)
+    fun start()
+    fun shutdown()
+    fun getStore(): JobStore
 }

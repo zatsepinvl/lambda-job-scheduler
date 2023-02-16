@@ -1,7 +1,6 @@
-package org.luartz.job.definition
+package org.luartz.job
 
 data class JobDefinition(
     val id: String,
-    val group: String,
     val lambdaArn: String
 )

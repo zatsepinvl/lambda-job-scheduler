@@ -1,3 +1,4 @@
 2h - Setup initial project structure
 2h - Investigated Quarts and AWS Batch APIs
-4h - Scheduler engine PoC
+2h - Scheduler engine PoC
+1h - Added IntevalTriggerTest

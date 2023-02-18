@@ -11,21 +11,17 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 import kotlin.math.max
 
 class SchedulerImpl(
-    private val executor: JobExecutor,
-    private val store: MutableJobStore
+    private val executor: JobExecutor, private val store: MutableJobStore
 ) : Scheduler {
-    private lateinit var schedulerThread: Thread
-    private lateinit var executorThread: Thread
+    private val schedulerThread = SchedulerThread()
+    private val executorThread = ExecutorThread()
+    private var terminated = false
 
     private val submittedQueue: BlockingQueue<Job> = LinkedBlockingQueue()
     private val scheduledQueue: BlockingQueue<JobScheduleRequest> = LinkedBlockingQueue()
-
-    private val executorService = Executors.newWorkStealingPool()
-    private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
     override fun schedule(request: JobScheduleRequest) {
         scheduledQueue.add(request)
@@ -37,11 +33,12 @@ class SchedulerImpl(
     }
 
     override fun start() {
-        schedulerThread = thread(name = "LambdaJobScheduler") { scheduleJobs() }
-        executorThread = thread(name = "LambdaJobExecutor") { executeSubmitted() }
+        schedulerThread.start()
+        executorThread.start()
     }
 
     override fun shutdown() {
+        terminated = true
         executorThread.interrupt()
         schedulerThread.interrupt()
     }
@@ -56,44 +53,61 @@ class SchedulerImpl(
         store.save(job)
     }
 
-    private fun scheduleJobs() {
-        try {
-            while (true) {
-                val request = scheduledQueue.take()
-                scheduleJobRecurring(request)
-            }
-        } catch (exception: InterruptedException) {
-            // do nothing
-        }
-    }
+    private inner class SchedulerThread : Thread("LambdaJobScheduler") {
+        private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
-    private fun scheduleJobRecurring(request: JobScheduleRequest) {
-        val now = Instant.now()
-        if (!request.trigger.mayFireAgain()) {
-            // means that trigger is now longer active
-            return
-        }
-        val nextFireTime = request.trigger.nextFireTime()
-        val delay = max(nextFireTime.toEpochMilli() - now.toEpochMilli(), 0)
-        scheduledExecutorService.schedule({
-            val job = request.toJob()
-            submitJob(job)
-            request.trigger.updateAfterFired()
-            scheduleJobRecurring(request)
-        }, delay, TimeUnit.MILLISECONDS)
-    }
-
-    private fun executeSubmitted() {
-        try {
-            while (true) {
-                val job = submittedQueue.take()
-                executorService.submit {
-                    val updatedJob = executor.execute(job)
-                    store.save(updatedJob)
+        override fun run() {
+            try {
+                while (true) {
+                    val request = scheduledQueue.take()
+                    scheduleJobRecurring(request)
                 }
+            } catch (exception: InterruptedException) {
+                if (!terminated) throw SchedulerException("Unexpected error while scheduling jobs", exception)
+                // else do nothing
             }
-        } catch (exception: InterruptedException) {
-            // do nothing
+        }
+
+        private fun scheduleJobRecurring(request: JobScheduleRequest) {
+            val now = Instant.now()
+            val trigger = request.trigger
+            if (!trigger.mayFireAgain()) {
+                // means that trigger is now longer active
+                return
+            }
+            val nextFireTime = trigger.nextFireTime()
+            val delay = max(nextFireTime.toEpochMilli() - now.toEpochMilli(), 0)
+            scheduledExecutorService.schedule({
+                val job = request.toJob()
+                submitJob(job)
+                trigger.updateAfterFired()
+                scheduledQueue.add(request)
+            }, delay, TimeUnit.MILLISECONDS)
+        }
+    }
+
+    private inner class ExecutorThread : Thread("LambdaJobExecutor") {
+        private val executorService = Executors.newWorkStealingPool()
+
+        override fun run() {
+            try {
+                while (true) {
+                    val job = submittedQueue.take()
+                    executeJob(job)
+                }
+            } catch (exception: InterruptedException) {
+                if (!terminated) throw SchedulerException("Unexpected error while executing jobs", exception)
+                // else do nothing
+            }
+        }
+
+        private fun executeJob(job: Job) {
+            executorService.submit {
+                job.startedAt = Instant.now()
+                val executedJob = executor.execute(job)
+                job.stoppedAt = Instant.now()
+                store.save(executedJob)
+            }
         }
     }
 }

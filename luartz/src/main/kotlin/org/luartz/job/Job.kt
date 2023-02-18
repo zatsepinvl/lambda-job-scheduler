@@ -13,4 +13,5 @@ data class Job(
 ) {
     var startedAt: Instant? = null
     var stoppedAt: Instant? = null
+    var executionError: String? = null
 }

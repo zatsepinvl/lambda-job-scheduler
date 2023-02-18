@@ -1,12 +1,12 @@
 package org.luartz.scheduler
 
-import org.luartz.executor.JobExecutor
+import org.luartz.executor.DummyJobExecutor
 import org.luartz.store.InMemoryJobStore
 
 object SchedulerFabric {
 
     private val scheduler = SchedulerImpl(
-        JobExecutor(),
+        DummyJobExecutor(),
         InMemoryJobStore()
     )
 

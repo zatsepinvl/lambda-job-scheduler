@@ -18,16 +18,17 @@ fun main() {
     val jobDefinition = JobDefinition("d1", "test")
 
     // Schedule a recurrent job
+    val trigger = IntervalTrigger(startAt = Instant.now(), interval = Duration.ofSeconds(2))
     scheduler.schedule(
         JobScheduleRequest(
             name = "RecurrentTestJob",
             definition = jobDefinition,
             payload = "test",
-            trigger = IntervalTrigger(Instant.now(), Duration.ofSeconds(2))
+            trigger = trigger
         )
     )
 
-    // Schedule a one off job
+    // Schedule a one-off job
     scheduler.schedule(
         JobScheduleRequest(
             name = "OneOffTestJob",

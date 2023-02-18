@@ -2,3 +2,4 @@
 2h - Investigated Quarts and AWS Batch APIs
 2h - Scheduler engine PoC
 1h - Added IntevalTriggerTest
+1h - Refactoring, added lambda invocation

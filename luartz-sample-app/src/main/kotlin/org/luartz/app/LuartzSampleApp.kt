@@ -10,12 +10,16 @@ import java.time.Duration
 import java.time.Instant
 
 
+/**
+ * Set AWS_ENDPOINT_URL=http://localhost:4566 environment variable for localstack deployment
+ */
 fun main() {
     // Init
-    val scheduler = SchedulerFabric.default()
+    val scheduler = SchedulerFabric.createDefault()
     val store = scheduler.getStore()
 
-    val jobDefinition = JobDefinition("d1", "test")
+    val jobDefinition = JobDefinition("d1", "TestSuccess")
+    val payload = "{\"key\": \"value\"}"
 
     // Schedule a recurrent job
     val trigger = IntervalTrigger(startAt = Instant.now(), interval = Duration.ofSeconds(2))
@@ -23,7 +27,7 @@ fun main() {
         JobScheduleRequest(
             name = "RecurrentTestJob",
             definition = jobDefinition,
-            payload = "test",
+            payload = payload,
             trigger = trigger
         )
     )
@@ -33,7 +37,7 @@ fun main() {
         JobScheduleRequest(
             name = "OneOffTestJob",
             definition = jobDefinition,
-            payload = "test",
+            payload = payload,
             trigger = OneOffTrigger(Instant.now().plusSeconds(4))
         )
     )
@@ -41,18 +45,23 @@ fun main() {
     // Start
     scheduler.start()
 
-    Thread.sleep(5000)
+    Thread.sleep(10000)
 
     // Submit when already started
     scheduler.submit(
         JobSubmitRequest(
             name = "LateSubmittedJob",
             definition = jobDefinition,
-            payload = "test"
+            payload = payload
         )
     )
 
     // Print jobs
     val jobs = store.getJobsByName("RecurrentTestJob")
     println(jobs)
+
+
+    //Thread.sleep(100000)
+
+    scheduler.shutdown()
 }

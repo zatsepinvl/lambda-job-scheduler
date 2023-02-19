@@ -1,16 +1,17 @@
 package org.luartz.scheduler
 
-import org.luartz.executor.DummyJobExecutor
+import org.luartz.aws.LambdaClientFactory
+import org.luartz.executor.LambdaJobExecutor
 import org.luartz.store.InMemoryJobStore
 
 object SchedulerFabric {
 
-    private val scheduler = SchedulerImpl(
-        DummyJobExecutor(),
-        InMemoryJobStore()
-    )
+    fun createDefault(): Scheduler {
+        val store = InMemoryJobStore()
 
-    fun default(): Scheduler {
-        return scheduler
+        val lambdaClient = LambdaClientFactory.create()
+        val executor = LambdaJobExecutor(lambdaClient)
+
+        return SchedulerImpl(executor, store)
     }
 }

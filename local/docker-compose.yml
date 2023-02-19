@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+  localstack:
+    image: localstack/localstack:0.12.18
+    restart: always
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=lambda
+      - DEFAULT_REGION=eu-central-1
+      - DEBUG=0
+    volumes:
+      - ./resources:/docker-entrypoint-initaws.d

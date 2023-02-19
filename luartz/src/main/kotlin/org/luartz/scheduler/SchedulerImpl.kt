@@ -5,8 +5,10 @@ import org.luartz.job.Job
 import org.luartz.job.JobState
 import org.luartz.store.JobStore
 import org.luartz.store.MutableJobStore
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.time.Instant
-import java.util.*
+import java.util.UUID.randomUUID
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
@@ -14,21 +16,23 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
 class SchedulerImpl(
-    private val executor: JobExecutor, private val store: MutableJobStore
+    private val executor: JobExecutor,
+    private val store: MutableJobStore
 ) : Scheduler {
+    private val logger: Logger = LoggerFactory.getLogger(SchedulerImpl::class.java)
+
+    private val scheduledQueue: BlockingQueue<JobScheduleRequest> = LinkedBlockingQueue()
+    private val submittedQueue: BlockingQueue<Job> = LinkedBlockingQueue()
+
     private val schedulerThread = SchedulerThread()
     private val executorThread = ExecutorThread()
-    private var terminated = false
-
-    private val submittedQueue: BlockingQueue<Job> = LinkedBlockingQueue()
-    private val scheduledQueue: BlockingQueue<JobScheduleRequest> = LinkedBlockingQueue()
 
     override fun schedule(request: JobScheduleRequest) {
         scheduledQueue.add(request)
     }
 
     override fun submit(request: JobSubmitRequest) {
-        val job = request.toJob()
+        val job = request.toJobWithId(randomUUID().toString())
         submitJob(job)
     }
 
@@ -38,9 +42,8 @@ class SchedulerImpl(
     }
 
     override fun shutdown() {
-        terminated = true
-        executorThread.interrupt()
-        schedulerThread.interrupt()
+        schedulerThread.shutdown()
+        executorThread.shutdown()
     }
 
     override fun getStore(): JobStore {
@@ -54,6 +57,7 @@ class SchedulerImpl(
     }
 
     private inner class SchedulerThread : Thread("LambdaJobScheduler") {
+        private var terminated = false
         private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
         override fun run() {
@@ -68,32 +72,44 @@ class SchedulerImpl(
             }
         }
 
+        fun shutdown() {
+            terminated = true
+            scheduledExecutorService.shutdown()
+            this.interrupt()
+        }
+
         private fun scheduleJobRecurring(request: JobScheduleRequest) {
-            val now = Instant.now()
             val trigger = request.trigger
             if (!trigger.mayFireAgain()) {
                 // means that trigger is now longer active
                 return
             }
+
+            // Calculate delay time to submit job
+            val now = Instant.now()
             val nextFireTime = trigger.nextFireTime()
-            val delay = max(nextFireTime.toEpochMilli() - now.toEpochMilli(), 0)
+            val delayMillis = max(nextFireTime.toEpochMilli() - now.toEpochMilli(), 0)
+
+            // Schedule job submitting for execution
             scheduledExecutorService.schedule({
-                val job = request.toJob()
+                val job = request.toJobWithId(randomUUID().toString())
                 submitJob(job)
                 trigger.updateAfterFired()
+                // Make scheduling recurring
                 scheduledQueue.add(request)
-            }, delay, TimeUnit.MILLISECONDS)
+            }, delayMillis, TimeUnit.MILLISECONDS)
         }
     }
 
     private inner class ExecutorThread : Thread("LambdaJobExecutor") {
+        private var terminated = false
         private val executorService = Executors.newWorkStealingPool()
 
         override fun run() {
             try {
                 while (true) {
                     val job = submittedQueue.take()
-                    executeJob(job)
+                    executeJobAsync(job)
                 }
             } catch (exception: InterruptedException) {
                 if (!terminated) throw SchedulerException("Unexpected error while executing jobs", exception)
@@ -101,35 +117,34 @@ class SchedulerImpl(
             }
         }
 
-        private fun executeJob(job: Job) {
+        fun shutdown() {
+            terminated = true
+            executorService.shutdown()
+            this.interrupt()
+        }
+
+        private fun executeJobAsync(job: Job) {
             executorService.submit {
-                job.startedAt = Instant.now()
-                val executedJob = executor.execute(job)
-                job.stoppedAt = Instant.now()
-                store.save(executedJob)
+                try {
+                    executeJob(job)
+                } catch (throwable: Throwable) {
+                    logger.error("Error while executing job ${job.printableId}", throwable)
+                }
+            }
+        }
+
+        private fun executeJob(job: Job) {
+            job.startedAt = Instant.now()
+            logger.info("Starting executing job ${job.printableId}")
+            val executedJob = executor.execute(job)
+            job.stoppedAt = Instant.now()
+            store.save(executedJob)
+
+            if (job.state == JobState.SUCCEEDED) {
+                logger.info("Job ${job.printableId} was executed successfully")
+            } else {
+                logger.error("Job ${job.printableId} execution failed with error ${job.executionError}")
             }
         }
     }
-}
-
-private fun JobScheduleRequest.toJob(): Job {
-    return Job(
-        id = UUID.randomUUID().toString(),
-        name = this.name,
-        definition = this.definition,
-        payload = this.payload,
-        state = JobState.CREATED,
-        trigger = this.trigger
-    )
-}
-
-private fun JobSubmitRequest.toJob(): Job {
-    return Job(
-        id = UUID.randomUUID().toString(),
-        name = this.name,
-        definition = this.definition,
-        payload = this.payload,
-        state = JobState.CREATED,
-        trigger = null
-    )
 }

@@ -18,7 +18,7 @@ class LambdaJobExecutor(private val lambdaClient: LambdaClient) : JobExecutor {
 
         val response = lambdaClient.invoke(request)
 
-        if (response.statusCode() == 200) {
+        if (response.functionError() == null) {
             job.state = JobState.SUCCEEDED
         } else {
             job.state = JobState.FAILED

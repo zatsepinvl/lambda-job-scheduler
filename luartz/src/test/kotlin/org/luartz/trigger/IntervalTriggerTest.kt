@@ -54,9 +54,9 @@ class IntervalTriggerTest {
 
     private fun givenIntervalTrigger(clock: Clock, startAtMillis: Long, intervalMillis: Long): IntervalTrigger {
         return IntervalTrigger(
-            clock,
             Instant.ofEpochMilli(startAtMillis),
-            Duration.ofMillis(intervalMillis)
+            Duration.ofMillis(intervalMillis),
+            clock
         )
     }
 }

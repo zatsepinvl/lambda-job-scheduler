@@ -3,13 +3,11 @@ package org.luartz.scheduler
 import org.luartz.store.JobStore
 
 interface Scheduler {
-    fun schedule(request: JobScheduleRequest)
+    val jobStore: JobStore
 
-    fun submit(request: JobSubmitRequest)
+    fun schedule(request: JobScheduleRequest)
 
     fun start()
 
     fun shutdown()
-
-    fun getStore(): JobStore
 }

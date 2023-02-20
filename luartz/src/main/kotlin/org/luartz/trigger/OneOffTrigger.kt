@@ -2,7 +2,7 @@ package org.luartz.trigger
 
 import java.time.Instant
 
-class OneOffTrigger(
+open class OneOffTrigger(
     val fireAt: Instant
 ) : Trigger {
 

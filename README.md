@@ -45,7 +45,8 @@ sheudler.schedule(JobScheduleRequest(name = "MyJob", ...))
 
 Get jobs statuses by name:
 ```kotlin
-val jobs = scheduler.getJobsByName("MyJob")
+val store = scheduler.jobStore
+val jobs = store.getJobsByName("MyJob")
 ```
 
 

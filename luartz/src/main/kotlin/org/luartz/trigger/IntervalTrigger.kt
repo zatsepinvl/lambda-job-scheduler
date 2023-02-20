@@ -5,9 +5,9 @@ import java.time.Duration
 import java.time.Instant
 
 class IntervalTrigger(
-    val clock: Clock = Clock.systemDefaultZone(),
     val startAt: Instant,
-    val interval: Duration
+    val interval: Duration,
+    val clock: Clock = Clock.systemDefaultZone(),
 ) : Trigger {
     override fun mayFireAgain() = true
 

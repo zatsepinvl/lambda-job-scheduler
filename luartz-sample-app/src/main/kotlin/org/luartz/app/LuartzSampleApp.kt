@@ -2,9 +2,10 @@ package org.luartz.app
 
 import org.luartz.job.JobDefinition
 import org.luartz.scheduler.JobScheduleRequest
-import org.luartz.scheduler.JobSubmitRequest
 import org.luartz.scheduler.SchedulerFabric
+import org.luartz.store.InMemoryJobStore
 import org.luartz.trigger.IntervalTrigger
+import org.luartz.trigger.NowTrigger
 import org.luartz.trigger.OneOffTrigger
 import java.time.Duration
 import java.time.Instant
@@ -14,9 +15,13 @@ import java.time.Instant
  * Set AWS_ENDPOINT_URL=http://localhost:4566 environment variable for localstack deployment
  */
 fun main() {
-    // Init
-    val scheduler = SchedulerFabric.createDefault()
-    val store = scheduler.getStore()
+    // Init for test
+    val scheduler = SchedulerFabric.create(InMemoryJobStore(), DummyJobExecutor())
+
+    // Init for real lambda invocation
+    //val scheduler = SchedulerFabric.createDefault()
+
+    val store = scheduler.jobStore
 
     val jobDefinition = JobDefinition("d1", "TestSuccess")
     val payload = "{\"key\": \"value\"}"
@@ -47,12 +52,13 @@ fun main() {
 
     Thread.sleep(10000)
 
-    // Submit when already started
-    scheduler.submit(
-        JobSubmitRequest(
+    // Schedule when already started
+    scheduler.schedule(
+        JobScheduleRequest(
             name = "LateSubmittedJob",
             definition = jobDefinition,
-            payload = payload
+            payload = payload,
+            trigger = NowTrigger()
         )
     )
 
@@ -60,8 +66,7 @@ fun main() {
     val jobs = store.getJobsByName("RecurrentTestJob")
     println(jobs)
 
-
-    //Thread.sleep(100000)
+    Thread.sleep(100000)
 
     scheduler.shutdown()
 }

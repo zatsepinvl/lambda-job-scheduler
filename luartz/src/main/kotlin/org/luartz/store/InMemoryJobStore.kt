@@ -1,14 +1,17 @@
 package org.luartz.store
 
 import org.luartz.job.Job
+import java.util.concurrent.CopyOnWriteArrayList
 
 class InMemoryJobStore : MutableJobStore {
     private val jobsById: MutableMap<String, Job> = mutableMapOf()
-    private val jobsByName: MutableMap<String, MutableList<Job>> = mutableMapOf()
+
+    // Thread save list required for concurrent access
+    private val jobsByName: MutableMap<String, CopyOnWriteArrayList<Job>> = mutableMapOf()
 
     override fun save(job: Job) {
         jobsById[job.id] = job
-        jobsByName.getOrPut(job.name) { mutableListOf() }.add(job)
+        jobsByName.getOrPut(job.name) { CopyOnWriteArrayList() }.add(job)
     }
 
     override fun getJob(jobId: String): Job? {

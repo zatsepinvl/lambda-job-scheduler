@@ -5,6 +5,7 @@ import org.luartz.job.Job
 import org.luartz.job.JobState
 import org.luartz.store.JobStore
 import org.luartz.store.MutableJobStore
+import org.luartz.util.WorkerThread
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Instant
@@ -27,13 +28,10 @@ class SchedulerImpl(
     private val schedulerThread = SchedulerThread()
     private val executorThread = ExecutorThread()
 
+    override val jobStore: JobStore = store
+
     override fun schedule(request: JobScheduleRequest) {
         scheduledQueue.add(request)
-    }
-
-    override fun submit(request: JobSubmitRequest) {
-        val job = request.toJobWithId(randomUUID().toString())
-        submitJob(job)
     }
 
     override fun start() {
@@ -46,36 +44,16 @@ class SchedulerImpl(
         executorThread.shutdown()
     }
 
-    override fun getStore(): JobStore {
-        return this.store
-    }
-
-    private fun submitJob(job: Job) {
-        submittedQueue.add(job)
-        job.state = JobState.SUBMITTED
-        store.save(job)
-    }
-
-    private inner class SchedulerThread : Thread("LambdaJobScheduler") {
-        private var terminated = false
+    private inner class SchedulerThread : WorkerThread("LambdaJobScheduler") {
         private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
-        override fun run() {
-            try {
-                while (true) {
-                    val request = scheduledQueue.take()
-                    scheduleJobRecurring(request)
-                }
-            } catch (exception: InterruptedException) {
-                if (!terminated) throw SchedulerException("Unexpected error while scheduling jobs", exception)
-                // else do nothing
-            }
+        override fun runInfinitely() {
+            val request = scheduledQueue.take()
+            scheduleJobRecurring(request)
         }
 
-        fun shutdown() {
-            terminated = true
+        override fun onShutdown() {
             scheduledExecutorService.shutdown()
-            this.interrupt()
         }
 
         private fun scheduleJobRecurring(request: JobScheduleRequest) {
@@ -99,28 +77,25 @@ class SchedulerImpl(
                 scheduledQueue.add(request)
             }, delayMillis, TimeUnit.MILLISECONDS)
         }
+
+
+        private fun submitJob(job: Job) {
+            submittedQueue.add(job)
+            job.state = JobState.SUBMITTED
+            store.save(job)
+        }
     }
 
-    private inner class ExecutorThread : Thread("LambdaJobExecutor") {
-        private var terminated = false
+    private inner class ExecutorThread : WorkerThread("LambdaJobExecutor") {
         private val executorService = Executors.newWorkStealingPool()
 
-        override fun run() {
-            try {
-                while (true) {
-                    val job = submittedQueue.take()
-                    executeJobAsync(job)
-                }
-            } catch (exception: InterruptedException) {
-                if (!terminated) throw SchedulerException("Unexpected error while executing jobs", exception)
-                // else do nothing
-            }
+        override fun runInfinitely() {
+            val job = submittedQueue.take()
+            executeJobAsync(job)
         }
 
-        fun shutdown() {
-            terminated = true
+        override fun onShutdown() {
             executorService.shutdown()
-            this.interrupt()
         }
 
         private fun executeJobAsync(job: Job) {

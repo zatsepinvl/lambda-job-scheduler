@@ -9,7 +9,7 @@ data class Job(
     val definition: JobDefinition,
     val payload: String,
     var state: JobState,
-    val trigger: Trigger?
+    val trigger: Trigger
 ) {
     var startedAt: Instant? = null
     var stoppedAt: Instant? = null

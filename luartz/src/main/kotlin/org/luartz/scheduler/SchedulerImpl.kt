@@ -8,6 +8,7 @@ import org.luartz.store.MutableJobStore
 import org.luartz.util.WorkerThread
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Clock
 import java.time.Instant
 import java.util.UUID.randomUUID
 import java.util.concurrent.BlockingQueue
@@ -18,7 +19,8 @@ import kotlin.math.max
 
 class SchedulerImpl(
     private val executor: JobExecutor,
-    private val store: MutableJobStore
+    private val store: MutableJobStore,
+    private val clock: Clock = Clock.systemDefaultZone()
 ) : Scheduler {
     private val logger: Logger = LoggerFactory.getLogger(SchedulerImpl::class.java)
 
@@ -64,7 +66,7 @@ class SchedulerImpl(
             }
 
             // Calculate delay time to submit job
-            val now = Instant.now()
+            val now = clock.instant()
             val nextFireTime = trigger.nextFireTime()
             val delayMillis = max(nextFireTime.toEpochMilli() - now.toEpochMilli(), 0)
 

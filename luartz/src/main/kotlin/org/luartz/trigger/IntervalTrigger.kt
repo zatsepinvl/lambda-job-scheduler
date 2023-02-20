@@ -7,7 +7,7 @@ import java.time.Instant
 class IntervalTrigger(
     val startAt: Instant,
     val interval: Duration,
-    val clock: Clock = Clock.systemDefaultZone(),
+    private val clock: Clock = Clock.systemDefaultZone(),
 ) : Trigger {
     override fun mayFireAgain() = true
 

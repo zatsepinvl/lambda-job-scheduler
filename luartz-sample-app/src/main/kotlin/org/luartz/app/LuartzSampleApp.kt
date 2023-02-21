@@ -27,7 +27,7 @@ fun main() {
     val payload = "{\"key\": \"value\"}"
 
     // Schedule a recurrent job
-    val trigger = IntervalTrigger(startAt = Instant.now(), interval = Duration.ofSeconds(2))
+    val trigger = IntervalTrigger(startAt = Instant.now(), interval = Duration.ofSeconds(10))
     scheduler.schedule(
         JobScheduleRequest(
             name = "RecurrentTestJob",
@@ -43,7 +43,7 @@ fun main() {
             name = "OneOffTestJob",
             definition = jobDefinition,
             payload = payload,
-            trigger = OneOffTrigger(Instant.now().plusSeconds(4))
+            trigger = OneOffTrigger(Instant.now().plusSeconds(10))
         )
     )
 

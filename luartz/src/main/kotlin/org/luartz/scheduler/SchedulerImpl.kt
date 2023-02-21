@@ -9,7 +9,6 @@ import org.luartz.util.WorkerThread
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Clock
-import java.time.Instant
 import java.util.UUID.randomUUID
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executors
@@ -69,22 +68,21 @@ class SchedulerImpl(
             val now = clock.instant()
             val nextFireTime = trigger.nextFireTime()
             val delayMillis = max(nextFireTime.toEpochMilli() - now.toEpochMilli(), 0)
-
+            val job = request.toJobWithId(randomUUID().toString())
             // Schedule job submitting for execution
             scheduledExecutorService.schedule({
-                val job = request.toJobWithId(randomUUID().toString())
                 submitJob(job)
                 trigger.updateAfterFired()
                 // Make scheduling recurring
                 scheduledQueue.add(request)
             }, delayMillis, TimeUnit.MILLISECONDS)
+            job.scheduleExecutionAt(now.plusMillis(delayMillis))
+            store.save(job)
         }
 
 
         private fun submitJob(job: Job) {
             submittedQueue.add(job)
-            job.state = JobState.SUBMITTED
-            store.save(job)
         }
     }
 
@@ -111,10 +109,12 @@ class SchedulerImpl(
         }
 
         private fun executeJob(job: Job) {
-            job.startedAt = Instant.now()
+            job.runAt(clock.instant())
+            store.save(job)
+
             logger.info("Starting executing job ${job.printableId}")
             val executedJob = executor.execute(job)
-            job.stoppedAt = Instant.now()
+
             store.save(executedJob)
 
             if (job.state == JobState.SUCCEEDED) {

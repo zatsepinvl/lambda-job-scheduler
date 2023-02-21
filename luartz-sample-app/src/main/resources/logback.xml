@@ -5,6 +5,8 @@
         </encoder>
     </appender>
 
+    <logger name="org.luartz" level="debug"/>
+
     <root level="info">
         <appender-ref ref="STDOUT"/>
     </root>

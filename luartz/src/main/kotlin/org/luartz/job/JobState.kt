@@ -2,7 +2,7 @@ package org.luartz.job
 
 enum class JobState {
     CREATED,
-    SUBMITTED,
+    SCHEDULED,
     RUNNING,
     SUCCEEDED,
     FAILED

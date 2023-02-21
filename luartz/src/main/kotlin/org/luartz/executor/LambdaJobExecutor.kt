@@ -1,13 +1,16 @@
 package org.luartz.executor
 
 import org.luartz.job.Job
-import org.luartz.job.JobState
 import software.amazon.awssdk.core.SdkBytes
 import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.InvokeRequest
+import java.time.Clock
 
 
-class LambdaJobExecutor(private val lambdaClient: LambdaClient) : JobExecutor {
+class LambdaJobExecutor(
+    private val lambdaClient: LambdaClient,
+    private val clock: Clock = Clock.systemDefaultZone()
+) : JobExecutor {
 
     override fun execute(job: Job): Job {
         val payload: SdkBytes = SdkBytes.fromUtf8String(job.payload)
@@ -18,13 +21,10 @@ class LambdaJobExecutor(private val lambdaClient: LambdaClient) : JobExecutor {
 
         val response = lambdaClient.invoke(request)
 
-        if (response.functionError() == null) {
-            job.state = JobState.SUCCEEDED
+        return if (response.functionError() == null) {
+            job.succeedAt(clock.instant())
         } else {
-            job.state = JobState.FAILED
-            job.executionError = response.functionError()
+            job.failAt(clock.instant(), response.functionError())
         }
-
-        return job
     }
 }

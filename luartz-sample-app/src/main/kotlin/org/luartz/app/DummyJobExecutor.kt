@@ -8,7 +8,7 @@ import kotlin.random.nextLong
 
 class DummyJobExecutor : JobExecutor {
     override fun execute(job: Job): Job {
-        Thread.sleep(Random.nextLong(1000L..5000L))
+        Thread.sleep(Random.nextLong(5000L..10000L))
         job.state = JobState.SUCCEEDED
         return job
     }

@@ -5,3 +5,4 @@
 1h - Refactoring, added lambda invocation
 2h - Logging, localstack deployment
 2h - Update readme, refactor scheduler api and impl
+1h - Job state transmission

@@ -6,16 +6,14 @@ import org.luartz.executor.JobExecutor
 import org.luartz.job.Job
 import org.luartz.job.JobDefinition
 import org.luartz.job.JobState
-import org.luartz.scheduler.JobScheduleRequest
+import org.luartz.scheduler.JobTemplate
 import org.luartz.scheduler.Scheduler
 import org.luartz.scheduler.SchedulerImpl
 import org.luartz.store.MutableJobStore
 import org.luartz.trigger.NowTrigger
 import org.luartz.trigger.Trigger
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.verify
+import org.mockito.Mockito.*
 import org.mockito.kotlin.any
-import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import java.lang.Thread.sleep
 
@@ -42,7 +40,7 @@ class SchedulerImplTest {
         scheduler.whenScheduledAndAwaited(request)
 
         // Then
-        verify(executor, times(1)).execute(any())
+        verify(executor).execute(any())
     }
 
     @Test
@@ -58,10 +56,11 @@ class SchedulerImplTest {
         verify(store, times(3)).save(any())
     }
 
-    private fun givenTestJobScheduleRequest(trigger: Trigger = NowTrigger()): JobScheduleRequest {
-        return JobScheduleRequest(
-            name = "test_name",
-            definition = JobDefinition("test", "test"),
+    private fun givenTestJobScheduleRequest(trigger: Trigger = NowTrigger()): JobTemplate {
+        return JobTemplate(
+            id = "test_tempalte",
+            jobName = "test_name",
+            definition = JobDefinition("test_function"),
             payload = "test_payload",
             trigger = trigger
         )
@@ -75,7 +74,7 @@ class SchedulerImplTest {
         }
     }
 
-    private fun Scheduler.whenScheduledAndAwaited(request: JobScheduleRequest, awaitMillis: Long = 200) {
+    private fun Scheduler.whenScheduledAndAwaited(request: JobTemplate, awaitMillis: Long = 200) {
         this.schedule(request)
         this.start()
         sleep(awaitMillis)

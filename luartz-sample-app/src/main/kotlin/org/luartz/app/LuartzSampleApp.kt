@@ -1,7 +1,7 @@
 package org.luartz.app
 
 import org.luartz.job.JobDefinition
-import org.luartz.scheduler.JobScheduleRequest
+import org.luartz.scheduler.JobTemplate
 import org.luartz.scheduler.SchedulerFabric
 import org.luartz.store.InMemoryJobStore
 import org.luartz.trigger.IntervalTrigger
@@ -23,14 +23,15 @@ fun main() {
 
     val store = scheduler.jobStore
 
-    val jobDefinition = JobDefinition("d1", "TestSuccess")
+    val jobDefinition = JobDefinition("TestSuccess")
     val payload = "{\"key\": \"value\"}"
 
     // Schedule a recurrent job
     val trigger = IntervalTrigger(startAt = Instant.now(), interval = Duration.ofSeconds(10))
     scheduler.schedule(
-        JobScheduleRequest(
-            name = "RecurrentTestJob",
+        JobTemplate(
+            id = "RecurrentTestJob",
+            jobName = "RecurrentTestJob",
             definition = jobDefinition,
             payload = payload,
             trigger = trigger
@@ -39,8 +40,9 @@ fun main() {
 
     // Schedule a one-off job
     scheduler.schedule(
-        JobScheduleRequest(
-            name = "OneOffTestJob",
+        JobTemplate(
+            id = "OneOffTestJob",
+            jobName = "OneOffTestJob",
             definition = jobDefinition,
             payload = payload,
             trigger = OneOffTrigger(Instant.now().plusSeconds(10))
@@ -50,12 +52,19 @@ fun main() {
     // Start
     scheduler.start()
 
+    // Get job templates
+    println("Job templates: ${scheduler.jobTemplates}")
+
     Thread.sleep(10000)
+
+    // Unschedule
+    scheduler.unschedule("RecurrentTestJob")
 
     // Schedule when already started
     scheduler.schedule(
-        JobScheduleRequest(
-            name = "LateSubmittedJob",
+        JobTemplate(
+            id = "LateSubmittedJob",
+            jobName = "LateSubmittedJob",
             definition = jobDefinition,
             payload = payload,
             trigger = NowTrigger()
@@ -63,6 +72,7 @@ fun main() {
     )
 
     // Print jobs
+
     val jobs = store.getJobsByName("RecurrentTestJob")
     println(jobs)
 

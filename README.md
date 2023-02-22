@@ -6,21 +6,25 @@ Quartz-like job scheduler based on AWS Lambda
 
 ## Feature Coverage
 
-| Feature                        | Status            |
-|--------------------------------|-------------------|
-| Submitting job                 | ✅ Implemented     |
-| Scheduling one-off job         | ✅ Implemented     |
-| Scheduling recurring job       | ✅ Implemented     |
-| Scheduling cron job            | 🏃 Coming soon... |
-| Getting jobs statuses          | ✅ Implemented     |
-| AWS Lambda throttling handling | 🏃 Coming soon... |
-| Job execution events           | 🏃 Coming soon... |
-| Misfire handling               | 🏃 Coming soon... |
-| Job persistent store           | 🏃 Coming soon... |
+| Feature                                  | Status            |
+|------------------------------------------|-------------------|
+| Submitting job                           | ✅ Implemented     |
+| Scheduling one-off job                   | ✅ Implemented     |
+| Scheduling recurring job                 | ✅ Implemented     |
+| Scheduling cron job                      | 🏃 Coming soon... |
+| Unscheduling job                         | ✅ Implemented     |
+| Accessing job details in lambda function | 🏃 Coming soon... |
+| Getting jobs statuses                    | ✅ Implemented     |
+| Getting job schedules                    | 🏃 Coming soon... |
+| Listening for job status changes         | 🏃 Coming soon... |
+| AWS Lambda throttling handling           | 🤔 Sometime       |
+| Misfire handling                         | 🤔 Sometime       |
+| Job persistent store                     | 🤔 Sometime       |
 
 ## Getting Started
 
 Add dependency:
+
 ```groovy
 dependencies {
     ...
@@ -29,28 +33,37 @@ dependencies {
 ```
 
 Create Scheduler instance:
+
 ```kotlin
 val scheduler = SchedulerFabric.createDefault()
 ```
 
-Create a job definition:
+Create a trigger:
+
 ```kotlin
-val jobDefinition = JobDefinition(...)
+val trigger = IntervalTrigger(...) 
+```
+Create a job template:
+
+```kotlin
+val jobTemplate = JobTempalte(jobName = "MyJob", trigger = trigger, ...)
 ```
 
 Schedule a job:
+
 ```kotlin
-sheudler.schedule(JobScheduleRequest(name = "MyJob", ...))
+sheudler.schedule(jobTemplate)
 ```
 
 Get jobs statuses by name:
+
 ```kotlin
 val store = scheduler.jobStore
 val jobs = store.getJobsByName("MyJob")
 ```
 
-
 ## Example app
+
 See [luartz-sample-app](luartz-sample-app/src/main/kotlin/org/luartz/app/LuartzSampleApp.kt) for a complete example.
 
 ## Architecture

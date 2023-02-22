@@ -8,7 +8,7 @@ abstract class WorkerThread(name: String) : Thread(name) {
     override fun run() {
         try {
             while (true) {
-                runInfinitely()
+                runInInfiniteLoop()
             }
         } catch (exception: InterruptedException) {
             if (!terminated) throw WorkerThreadException("Unexpected interrupted exception", exception)
@@ -24,5 +24,5 @@ abstract class WorkerThread(name: String) : Thread(name) {
 
     abstract fun onShutdown()
 
-    abstract fun runInfinitely()
+    abstract fun runInInfiniteLoop()
 }

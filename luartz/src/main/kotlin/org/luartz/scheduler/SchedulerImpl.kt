@@ -23,16 +23,33 @@ class SchedulerImpl(
 ) : Scheduler {
     private val logger: Logger = LoggerFactory.getLogger(SchedulerImpl::class.java)
 
-    private val scheduledQueue: BlockingQueue<JobScheduleRequest> = LinkedBlockingQueue()
-    private val submittedQueue: BlockingQueue<Job> = LinkedBlockingQueue()
+    private val scheduleQueue: BlockingQueue<JobTemplate> = LinkedBlockingQueue()
+    private val executionQueue: BlockingQueue<Job> = LinkedBlockingQueue()
 
     private val schedulerThread = SchedulerThread()
     private val executorThread = ExecutorThread()
 
+    private val templates: MutableMap<String, JobTemplate> = mutableMapOf()
+
+    override val jobTemplates: List<JobTemplate> get() = templates.values.toList()
     override val jobStore: JobStore = store
 
-    override fun schedule(request: JobScheduleRequest) {
-        scheduledQueue.add(request)
+    override fun schedule(template: JobTemplate) {
+        if (templates.containsKey(template.id)) {
+            throw IllegalArgumentException("Job template with id ${template.id} has already been added")
+        }
+        templates[template.id] = template
+        scheduleQueue.add(template)
+    }
+
+    override fun unschedule(templateId: String) {
+        val template = templates[templateId]
+        if (template == null) {
+            throw IllegalArgumentException("Job template is not found by id $templateId")
+        }
+        templates.remove(templateId)
+
+        logger.debug("Job template $templateId was unscheduled")
     }
 
     override fun start() {
@@ -48,17 +65,17 @@ class SchedulerImpl(
     private inner class SchedulerThread : WorkerThread("LambdaJobScheduler") {
         private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
-        override fun runInfinitely() {
-            val request = scheduledQueue.take()
-            scheduleJobRecurring(request)
+        override fun runInInfiniteLoop() {
+            val template = scheduleQueue.take()
+            scheduleJobRecurring(template)
         }
 
         override fun onShutdown() {
             scheduledExecutorService.shutdown()
         }
 
-        private fun scheduleJobRecurring(request: JobScheduleRequest) {
-            val trigger = request.trigger
+        private fun scheduleJobRecurring(template: JobTemplate) {
+            val trigger = template.trigger
             if (!trigger.mayFireAgain()) {
                 // means that trigger is now longer active
                 return
@@ -68,29 +85,35 @@ class SchedulerImpl(
             val now = clock.instant()
             val nextFireTime = trigger.nextFireTime()
             val delayMillis = max(nextFireTime.toEpochMilli() - now.toEpochMilli(), 0)
-            val job = request.toJobWithId(randomUUID().toString())
+
             // Schedule job submitting for execution
+            val job = template.toJobWithId(randomUUID().toString())
             scheduledExecutorService.schedule({
+                if (!templates.containsKey(template.id)) {
+                    // Skip execution if template was unscheduled
+                    return@schedule
+                }
                 submitJob(job)
                 trigger.updateAfterFired()
                 // Make scheduling recurring
-                scheduledQueue.add(request)
+                scheduleQueue.add(template)
             }, delayMillis, TimeUnit.MILLISECONDS)
+
             job.scheduleExecutionAt(now.plusMillis(delayMillis))
             store.save(job)
         }
 
 
         private fun submitJob(job: Job) {
-            submittedQueue.add(job)
+            executionQueue.add(job)
         }
     }
 
     private inner class ExecutorThread : WorkerThread("LambdaJobExecutor") {
         private val executorService = Executors.newWorkStealingPool()
 
-        override fun runInfinitely() {
-            val job = submittedQueue.take()
+        override fun runInInfiniteLoop() {
+            val job = executionQueue.take()
             executeJobAsync(job)
         }
 

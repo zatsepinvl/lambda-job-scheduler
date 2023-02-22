@@ -5,7 +5,11 @@ import org.luartz.store.JobStore
 interface Scheduler {
     val jobStore: JobStore
 
-    fun schedule(request: JobScheduleRequest)
+    val jobTemplates: List<JobTemplate>
+
+    fun schedule(template: JobTemplate)
+
+    fun unschedule(templateId: String)
 
     fun start()
 

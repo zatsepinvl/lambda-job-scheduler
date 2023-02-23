@@ -13,9 +13,9 @@ Quartz-like job scheduler based on AWS Lambda
 | Scheduling recurring job                 | ✅ Implemented     |
 | Scheduling cron job                      | 🏃 Coming soon... |
 | Unscheduling job                         | ✅ Implemented     |
-| Accessing job details in lambda function | 🏃 Coming soon... |
+| Accessing job details in lambda function | ✅ Implemented     |
 | Getting jobs statuses                    | ✅ Implemented     |
-| Getting job schedules                    | 🏃 Coming soon... |
+| Getting job schedules                    | ✅ Implemented     |
 | Listening for job status changes         | 🏃 Coming soon... |
 | AWS Lambda throttling handling           | 🤔 Sometime       |
 | Misfire handling                         | 🤔 Sometime       |

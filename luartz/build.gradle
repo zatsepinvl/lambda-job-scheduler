@@ -6,7 +6,7 @@ group "org.laurtz"
 version "1.0-SNAPSHOT"
 
 kotlin {
-    jvmToolchain(16)
+    jvmToolchain(17)
 }
 
 repositories {

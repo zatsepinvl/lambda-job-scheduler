@@ -7,7 +7,7 @@ data class Job(
     val id: String,
     val name: String,
     val definition: JobDefinition,
-    val payload: String,
+    val payload: Any?,
     val state: JobState,
     val trigger: Trigger,
     val scheduledExecutionAt: Instant? = null,

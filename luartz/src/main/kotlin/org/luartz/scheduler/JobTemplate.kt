@@ -9,8 +9,8 @@ data class JobTemplate(
     val id: String,
     val jobName: String,
     val definition: JobDefinition,
-    val payload: String,
-    val trigger: Trigger
+    val trigger: Trigger,
+    val payload: Any?,
 )
 
 fun JobTemplate.toJobWithId(id: String): Job {

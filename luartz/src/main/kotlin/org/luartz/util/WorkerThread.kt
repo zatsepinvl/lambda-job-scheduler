@@ -2,7 +2,7 @@ package org.luartz.util
 
 class WorkerThreadException(message: String?, cause: Throwable?) : RuntimeException(message, cause)
 
-abstract class WorkerThread(name: String) : Thread(name) {
+internal abstract class WorkerThread(name: String) : Thread(name) {
     private var terminated = false
 
     override fun run() {

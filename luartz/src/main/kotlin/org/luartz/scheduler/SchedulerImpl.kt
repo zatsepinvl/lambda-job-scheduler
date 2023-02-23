@@ -16,7 +16,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
-class SchedulerImpl(
+internal class SchedulerImpl(
     private val executor: JobExecutor,
     private val store: MutableJobStore,
     private val clock: Clock = Clock.systemDefaultZone()

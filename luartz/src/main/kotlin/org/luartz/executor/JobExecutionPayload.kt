@@ -1,18 +1,13 @@
 package org.luartz.executor
 
-import kotlinx.serialization.Contextual
-import kotlinx.serialization.Serializable
 import org.luartz.job.Job
 import org.luartz.json.Json
 
-@Serializable
 data class JobExecutionPayload(
     val job: JobExecutionData,
-    @Contextual
     val payload: Any?
 )
 
-@Serializable
 data class JobExecutionData(
     val id: String,
     val name: String,

@@ -8,43 +8,27 @@ data class Job(
     val name: String,
     val definition: JobDefinition,
     val payload: String,
-    var state: JobState,
-    val trigger: Trigger
+    val state: JobState,
+    val trigger: Trigger,
+    val scheduledExecutionAt: Instant? = null,
+    val startedAt: Instant? = null,
+    val stoppedAt: Instant? = null,
+    val executionError: String? = null
 ) {
-    var scheduledExecutionAt: Instant? = null
-        private set
-    var startedAt: Instant? = null
-        private set
-    var stoppedAt: Instant? = null
-        private set
-    var executionError: String? = null
-        private set
-
-    val printableId = "${name}:${id}"
-
     // ToDo: implement state machine invariant validation
     fun scheduleExecutionAt(time: Instant): Job {
-        scheduledExecutionAt = time
-        state = JobState.SCHEDULED
-        return this
+        return copy(state = JobState.SCHEDULED, scheduledExecutionAt = time)
     }
 
     fun runAt(time: Instant): Job {
-        startedAt = time
-        state = JobState.RUNNING
-        return this
+        return copy(state = JobState.RUNNING, startedAt = time)
     }
 
     fun succeedAt(time: Instant): Job {
-        stoppedAt = time
-        state = JobState.SUCCEEDED
-        return this
+        return copy(state = JobState.SUCCEEDED, stoppedAt = time)
     }
 
     fun failAt(time: Instant, error: String): Job {
-        stoppedAt = time
-        state = JobState.FAILED
-        executionError = error
-        return this
+        return copy(state = JobState.FAILED, stoppedAt = time, executionError = error)
     }
 }

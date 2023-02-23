@@ -62,6 +62,10 @@ class SchedulerImpl(
         executorThread.shutdown()
     }
 
+    private fun newJobId(jobName: String): String {
+        return "${jobName}:${randomUUID()}"
+    }
+
     private inner class SchedulerThread : WorkerThread("LambdaJobScheduler") {
         private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
@@ -87,7 +91,10 @@ class SchedulerImpl(
             val delayMillis = max(nextFireTime.toEpochMilli() - now.toEpochMilli(), 0)
 
             // Schedule job submitting for execution
-            val job = template.toJobWithId(randomUUID().toString())
+            val jobId = newJobId(template.jobName)
+            val job = template
+                .toJobWithId(jobId)
+                .scheduleExecutionAt(now.plusMillis(delayMillis))
             scheduledExecutorService.schedule({
                 if (!templates.containsKey(template.id)) {
                     // Skip execution if template was unscheduled
@@ -98,8 +105,6 @@ class SchedulerImpl(
                 // Make scheduling recurring
                 scheduleQueue.add(template)
             }, delayMillis, TimeUnit.MILLISECONDS)
-
-            job.scheduleExecutionAt(now.plusMillis(delayMillis))
             store.save(job)
         }
 
@@ -126,24 +131,24 @@ class SchedulerImpl(
                 try {
                     executeJob(job)
                 } catch (throwable: Throwable) {
-                    logger.error("Error while executing job ${job.printableId}", throwable)
+                    logger.error("Error while executing job ${job.id}", throwable)
                 }
             }
         }
 
-        private fun executeJob(job: Job) {
-            job.runAt(clock.instant())
+        private fun executeJob(scheduledJob: Job) {
+            val job = scheduledJob.runAt(clock.instant())
             store.save(job)
 
-            logger.info("Starting executing job ${job.printableId}")
+            logger.info("Starting executing job ${job.id}")
             val executedJob = executor.execute(job)
 
             store.save(executedJob)
 
-            if (job.state == JobState.SUCCEEDED) {
-                logger.info("Job ${job.printableId} was executed successfully")
+            if (scheduledJob.state == JobState.SUCCEEDED) {
+                logger.info("Job ${scheduledJob.id} was executed successfully")
             } else {
-                logger.error("Job ${job.printableId} execution failed with error ${job.executionError}")
+                logger.error("Job ${scheduledJob.id} execution failed with error ${scheduledJob.executionError}")
             }
         }
     }

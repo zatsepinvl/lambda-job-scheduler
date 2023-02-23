@@ -17,7 +17,7 @@ class InMemoryJobStore : MutableJobStore {
         jobsById[job.id] = job
         jobsByName.getOrPut(job.name) { CopyOnWriteArrayList() }.add(job)
 
-        logger.debug("Job ${job.printableId} saved in state ${job.state}")
+        logger.debug("Job ${job.id} saved in state ${job.state}")
     }
 
     override fun getJob(jobId: String): Job? {

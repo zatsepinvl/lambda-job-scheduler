@@ -2,14 +2,13 @@ package org.luartz.app
 
 import org.luartz.executor.JobExecutor
 import org.luartz.job.Job
-import org.luartz.job.JobState
+import java.time.Instant
 import kotlin.random.Random
 import kotlin.random.nextLong
 
 class DummyJobExecutor : JobExecutor {
     override fun execute(job: Job): Job {
         Thread.sleep(Random.nextLong(5000L..10000L))
-        job.state = JobState.SUCCEEDED
-        return job
+        return job.succeedAt(Instant.now())
     }
 }

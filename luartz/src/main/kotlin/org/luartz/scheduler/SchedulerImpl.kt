@@ -93,7 +93,7 @@ internal class SchedulerImpl(
             // Schedule job submitting for execution
             val jobId = newJobId(template.jobName)
             val job = template
-                .toJobWithId(jobId)
+                .toJobWithId(jobId, clock.instant())
                 .scheduleExecutionAt(now.plusMillis(delayMillis))
             scheduledExecutorService.schedule({
                 if (!templates.containsKey(template.id)) {

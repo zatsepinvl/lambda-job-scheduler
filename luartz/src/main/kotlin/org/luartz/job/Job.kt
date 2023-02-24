@@ -10,6 +10,7 @@ data class Job(
     val payload: Any?,
     val state: JobState,
     val trigger: Trigger,
+    val createdAt: Instant,
     val scheduledExecutionAt: Instant? = null,
     val startedAt: Instant? = null,
     val stoppedAt: Instant? = null,

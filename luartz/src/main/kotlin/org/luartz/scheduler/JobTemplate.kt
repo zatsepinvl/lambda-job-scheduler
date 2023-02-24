@@ -4,6 +4,7 @@ import org.luartz.job.Job
 import org.luartz.job.JobDefinition
 import org.luartz.job.JobState
 import org.luartz.trigger.Trigger
+import java.time.Instant
 
 data class JobTemplate(
     val id: String,
@@ -13,10 +14,11 @@ data class JobTemplate(
     val payload: Any?,
 )
 
-fun JobTemplate.toJobWithId(id: String): Job {
+fun JobTemplate.toJobWithId(id: String, createdAt: Instant): Job {
     return Job(
         id = id,
         name = this.jobName,
+        createdAt = createdAt,
         definition = this.definition,
         payload = this.payload,
         state = JobState.CREATED,

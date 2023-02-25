@@ -32,7 +32,7 @@ class LambdaJobExecutor(
 
         return lambdaClient.invoke(request)
             .thenApply { response ->
-                val output = response.payload().asUtf8String()
+                val output = response.payload()?.asUtf8String() ?: "<empty>"
                 logger.debug("Job ${job.id} execution output:\n${output}")
 
                 if (response.functionError() == null) {

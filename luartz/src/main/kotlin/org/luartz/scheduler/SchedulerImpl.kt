@@ -142,32 +142,45 @@ internal class SchedulerImpl(
         }
 
         private fun executeJobAsync(job: Job) {
-            executorService.submit {
-                try {
-                    executeJob(job)
-                } catch (throwable: Throwable) {
-                    logger.error("Error while executing job ${job.id}", throwable)
-                }
+            CompletableFuture
+                .supplyAsync({ prepareJob(job) }, executorService)
+                .thenCompose { executeJob(it) }
+                // Async is used to switch back to the current executor to gain more control
+                .whenCompleteAsync({ executedJob, throwable ->
+                    if (throwable != null) {
+                        handleJobExecutionError(job, throwable)
+                    } else {
+                        handleJobExecuted(executedJob)
+                    }
+                }, executorService)
+        }
+
+        private fun prepareJob(scheduledJob: Job): Job {
+            val job = scheduledJob.runAt(clock.instant())
+            store.save(job)
+            return job
+        }
+
+        private fun executeJob(runningJob: Job): CompletableFuture<Job> {
+            logger.info("Starting executing job ${runningJob.id}")
+            return executor.execute(runningJob)
+        }
+
+        private fun handleJobExecuted(job: Job) {
+            store.save(job)
+
+            if (job.state == JobState.SUCCEEDED) {
+                logger.info("Job ${job.id} was executed successfully")
+            } else {
+                logger.error("Job ${job.id} execution failed with error ${job.executionError}")
             }
         }
 
-        private fun executeJob(scheduledJob: Job) {
-            val job = scheduledJob.runAt(clock.instant())
-            store.save(job)
-
-            logger.info("Starting executing job ${job.id}")
-            executor
-                .execute(job)
-                // Switch context to the current executor service to gain more control
-                .thenApplyAsync({ executedJob ->
-                    store.save(executedJob)
-
-                    if (scheduledJob.state == JobState.SUCCEEDED) {
-                        logger.info("Job ${scheduledJob.id} was executed successfully")
-                    } else {
-                        logger.error("Job ${scheduledJob.id} execution failed with error ${scheduledJob.executionError}")
-                    }
-                }, executorService)
+        private fun handleJobExecutionError(job: Job, throwable: Throwable) {
+            logger.error("Error while executing job ${job.id}", throwable)
+            val failedJob = job.failAt(clock.instant(), throwable.message ?: "unknown execution error")
+            store.save(failedJob)
+            // ToDo: implement retry mechanism
         }
     }
 }

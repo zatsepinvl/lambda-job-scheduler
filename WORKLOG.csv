@@ -1,0 +1,15 @@
+Hours,Task
+2,Setup initial project structure
+2,Investigated Quarts and AWS Batch APIs
+2,Scheduler engine PoC
+1,Added IntervalTriggerTest
+1,Refactoring; added lambda invocation
+2,Logging; localstack deployment
+2,Update readme; refactor scheduler api and impl
+1,Job state transmission
+2,Scheduler smoke tests
+1,Unschedule feature
+1,Make job immutable
+1,Job data in lambda payload
+4,Use async lambda invocation
+2,In-memory store thread safety

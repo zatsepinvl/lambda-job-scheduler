@@ -7,6 +7,7 @@ class WorkerThreadException(message: String?, cause: Throwable?) : RuntimeExcept
 
 internal abstract class WorkerThread(name: String) : Thread(name) {
     private val logger: Logger = LoggerFactory.getLogger(WorkerThread::class.java)
+    @Volatile
     private var terminated = false
 
     override fun run() {

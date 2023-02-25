@@ -17,6 +17,7 @@ Quartz-like job scheduler based on AWS Lambda
 | Getting jobs statuses                    | ✅ Implemented     |
 | Getting job schedules                    | ✅ Implemented     |
 | Listening for job status changes         | 🏃 Coming soon... |
+| Lambda automatic deployment              | 🏃 Coming soon... |
 | AWS Lambda throttling handling           | 🤔 Sometime       |
 | Misfire handling                         | 🤔 Sometime       |
 | Job persistent store                     | 🤔 Sometime       |

@@ -15,7 +15,7 @@ object SchedulerFabric {
     fun createDefault(): Scheduler {
         val store = InMemoryJobStore()
 
-        val lambdaClient = LambdaClientFactory.create()
+        val lambdaClient = LambdaClientFactory.createAsync()
         val executor = LambdaJobExecutor(lambdaClient)
 
         return create(store, executor)

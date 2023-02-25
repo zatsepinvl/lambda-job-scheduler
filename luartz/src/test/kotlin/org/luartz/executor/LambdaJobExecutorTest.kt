@@ -3,17 +3,17 @@ package org.luartz.executor
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.luartz.job.Job
-import org.luartz.job.JobDefinition
 import org.luartz.job.JobState
+import org.luartz.job.givenTestJob
 import org.luartz.json.defaultJson
 import org.mockito.kotlin.*
-import software.amazon.awssdk.services.lambda.LambdaClient
+import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import software.amazon.awssdk.services.lambda.model.InvokeRequest
 import software.amazon.awssdk.services.lambda.model.InvokeResponse
+import java.util.concurrent.CompletableFuture.completedFuture
 
 class LambdaJobExecutorTest {
-    private lateinit var lambdaClient: LambdaClient
+    private lateinit var lambdaClient: LambdaAsyncClient
     private lateinit var executor: JobExecutor
 
     @BeforeEach
@@ -29,10 +29,10 @@ class LambdaJobExecutorTest {
         val response = InvokeResponse.builder()
             .statusCode(200)
             .build()
-        whenever(lambdaClient.invoke(any<InvokeRequest>())).thenReturn(response)
+        whenever(lambdaClient.invoke(any<InvokeRequest>())).thenReturn(completedFuture(response))
 
         // When
-        val executedJob = executor.execute(runningJob)
+        val executedJob = executor.execute(runningJob).get()
 
         // Then
         assertThat(executedJob.state).isEqualTo(JobState.SUCCEEDED)
@@ -47,10 +47,10 @@ class LambdaJobExecutorTest {
             .statusCode(200)
             .functionError(functionError)
             .build()
-        whenever(lambdaClient.invoke(any<InvokeRequest>())).thenReturn(response)
+        whenLambdaInvoked(any(), response)
 
         // When
-        val executedJob = executor.execute(runningJob)
+        val executedJob = executor.execute(runningJob).get()
 
         // Then
         assertThat(executedJob.state).isEqualTo(JobState.FAILED)
@@ -62,7 +62,7 @@ class LambdaJobExecutorTest {
         // Given
         val runningJob = givenTestJob()
         val response = InvokeResponse.builder().statusCode(200).build()
-        whenever(lambdaClient.invoke(any<InvokeRequest>())).thenReturn(response)
+        whenLambdaInvoked(any(), response)
 
         // When
         executor.execute(runningJob)
@@ -83,16 +83,7 @@ class LambdaJobExecutorTest {
         }
     }
 
-    private fun givenTestJob(): Job {
-        return Job(
-            id = "testId",
-            name = "testName",
-            definition = JobDefinition("testFunctionName"),
-            payload = mapOf(
-                "testKey" to "testValue"
-            ),
-            state = JobState.RUNNING,
-            trigger = mock()
-        )
+    private fun whenLambdaInvoked(request: InvokeRequest, response: InvokeResponse) {
+        whenever(lambdaClient.invoke(request)).thenReturn(completedFuture(response))
     }
 }

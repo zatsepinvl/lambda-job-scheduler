@@ -3,9 +3,7 @@ package org.luartz.app
 import org.luartz.job.JobDefinition
 import org.luartz.scheduler.JobTemplate
 import org.luartz.scheduler.SchedulerFabric
-import org.luartz.store.InMemoryJobStore
 import org.luartz.trigger.IntervalTrigger
-import org.luartz.trigger.NowTrigger
 import org.luartz.trigger.OneOffTrigger
 import java.time.Duration
 import java.time.Instant
@@ -27,14 +25,14 @@ fun main() {
     val payload = "{\"key\": \"value\"}"
 
     // Schedule a recurrent job
-    val trigger = IntervalTrigger(startAt = Instant.now(), interval = Duration.ofSeconds(10))
+    val intervalTrigger = IntervalTrigger(startAt = Instant.now(), interval = Duration.ofSeconds(10))
     scheduler.schedule(
         JobTemplate(
             id = "RecurrentTestJob",
             jobName = "RecurrentTestJob",
             definition = jobDefinition,
             payload = payload,
-            trigger = trigger
+            trigger = intervalTrigger
         )
     )
 
@@ -55,28 +53,32 @@ fun main() {
     // Get job templates
     println("Job templates: ${scheduler.jobTemplates}")
 
+    println("Sleeping for 10 seconds...")
     Thread.sleep(10000)
 
     // Unschedule
+    println("Unscheduling recurrent job")
     scheduler.unschedule("RecurrentTestJob")
 
     // Schedule when already started
+    println("Scheduling another recurrent job")
     scheduler.schedule(
         JobTemplate(
             id = "LateSubmittedJob",
             jobName = "LateSubmittedJob",
             definition = jobDefinition,
             payload = payload,
-            trigger = NowTrigger()
+            trigger = intervalTrigger
         )
     )
 
     // Print jobs
-
     val jobs = store.getJobsByName("RecurrentTestJob")
     println(jobs)
 
-    Thread.sleep(100000)
+    println("Sleeping for 10 seconds...")
+    Thread.sleep(5000)
 
+    println("Shutting down scheduler...")
     scheduler.shutdown()
 }

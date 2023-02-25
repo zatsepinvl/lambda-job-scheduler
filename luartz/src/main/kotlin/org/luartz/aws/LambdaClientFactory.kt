@@ -1,19 +1,19 @@
 package org.luartz.aws
 
-import software.amazon.awssdk.services.lambda.LambdaClient
+import software.amazon.awssdk.services.lambda.LambdaAsyncClient
 import java.net.URI
 
 private const val AWS_ENDPOINT_URL = "AWS_ENDPOINT_URL"
 
 object LambdaClientFactory {
-    fun create(): LambdaClient {
+    fun createAsync(): LambdaAsyncClient {
         val endpointUrl = System.getenv(AWS_ENDPOINT_URL)
         return if (endpointUrl != null) {
-            LambdaClient.builder()
+            LambdaAsyncClient.builder()
                 .endpointOverride(URI.create(endpointUrl))
                 .build()
         } else {
-            LambdaClient.create()
+            LambdaAsyncClient.create()
         }
     }
 }

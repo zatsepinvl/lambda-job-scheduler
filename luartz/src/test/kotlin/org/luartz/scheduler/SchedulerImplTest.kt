@@ -18,6 +18,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import java.lang.Thread.sleep
 import java.time.Instant
+import java.util.concurrent.CompletableFuture.completedFuture
 
 class SchedulerImplTest {
 
@@ -86,7 +87,7 @@ class SchedulerImplTest {
     private fun JobExecutor.mockSuccessInvocation() {
         whenever(this.execute(any())).thenAnswer {
             val job = it.arguments[0] as Job
-            job.succeedAt(Instant.now())
+            completedFuture(job.succeedAt(Instant.now()))
         }
     }
 

@@ -17,19 +17,19 @@ repositories {
 }
 
 dependencies {
+    // Luartz
+    implementation project(":luartz")
+
     // Spring
-    implementation "org.springframework.boot:spring-boot-starter-web"
+    implementation "org.springframework.boot:spring-boot-starter"
     developmentOnly "org.springframework.boot:spring-boot-devtools"
 
     // Jackson
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin"
     implementation "org.jetbrains.kotlin:kotlin-reflect"
 
-    // Luartz
-    implementation project(":luartz")
-
     // Logback
-    implementation "ch.qos.logback:logback-classic:1.3.5"
+    //implementation "ch.qos.logback:logback-classic:1.3.5"
 
     // JUnit
     testImplementation "org.junit.jupiter:junit-jupiter-api:5.8.1"

@@ -74,8 +74,7 @@ In order to start example app follow the steps:
 
 Start localstack:
 ```shell
-cd localstack
-docker-compose up -d
+docker-compose -f localstack/docker-compose.yml up -d
 ```
 
 Deploy sample lambda:

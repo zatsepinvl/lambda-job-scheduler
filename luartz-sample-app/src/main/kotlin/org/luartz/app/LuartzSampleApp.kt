@@ -32,7 +32,7 @@ class AppRunner : CommandLineRunner {
         // Init for real lambda invocation
         val scheduler = SchedulerFabric.createDefault()
 
-        val store = scheduler.jobStore
+        val store = scheduler.getJobStore()
 
         val lambdaDefinition = LambdaDefinition("Sample")
         val payload = mapOf(
@@ -66,7 +66,7 @@ class AppRunner : CommandLineRunner {
         scheduler.start()
 
         // Get job templates
-        println("Job templates: ${scheduler.jobTemplates}")
+        println("Job templates: ${scheduler.getJobTemplates()}")
 
         println("Sleeping for 10 seconds...")
         Thread.sleep(10000)

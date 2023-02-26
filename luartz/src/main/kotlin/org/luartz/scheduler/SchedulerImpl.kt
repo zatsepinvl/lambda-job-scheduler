@@ -30,9 +30,6 @@ internal class SchedulerImpl(
 
     private val templates: MutableMap<String, JobTemplate> = ConcurrentHashMap()
 
-    override val jobTemplates: List<JobTemplate> get() = templates.values.toList()
-    override val jobStore: JobStore = store
-
     override fun schedule(template: JobTemplate) {
         if (templates.containsKey(template.id)) {
             throw IllegalArgumentException("Job template with id ${template.id} has already been added")
@@ -59,6 +56,14 @@ internal class SchedulerImpl(
     override fun shutdown() {
         schedulerThread.shutdown()
         executorThread.shutdown()
+    }
+
+    override fun getJobStore(): JobStore {
+        return store
+    }
+
+    override fun getJobTemplates(): List<JobTemplate> {
+        return templates.values.toList()
     }
 
     private fun newJobId(jobName: String): String {

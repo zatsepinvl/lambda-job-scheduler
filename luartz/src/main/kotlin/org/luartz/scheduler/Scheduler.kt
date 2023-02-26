@@ -3,10 +3,6 @@ package org.luartz.scheduler
 import org.luartz.store.JobStore
 
 interface Scheduler {
-    val jobStore: JobStore
-
-    val jobTemplates: List<JobTemplate>
-
     fun schedule(template: JobTemplate)
 
     fun unschedule(templateId: String)
@@ -14,4 +10,8 @@ interface Scheduler {
     fun start()
 
     fun shutdown()
+
+    fun getJobStore(): JobStore
+
+    fun getJobTemplates(): List<JobTemplate>
 }

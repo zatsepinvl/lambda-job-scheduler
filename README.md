@@ -2,6 +2,8 @@
 
 Quartz-like job scheduler based on AWS Lambda
 
+[![Build](https://github.com/zatsepinvl/lambda-job-scheduler/actions/workflows/build.yml/badge.svg)](https://github.com/zatsepinvl/lambda-job-scheduler/actions/workflows/build.yml)
+
 🚀 Project Status: Proof of Concept development 🚀
 
 ## Feature Coverage

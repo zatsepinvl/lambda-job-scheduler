@@ -13,3 +13,4 @@ Hours,Task
 1,Job data in lambda payload
 4,Use async lambda invocation
 2,In-memory store thread safety
+4,Add sample lambda

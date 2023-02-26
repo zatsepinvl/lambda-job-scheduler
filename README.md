@@ -87,7 +87,7 @@ Start sample app:
 ./gradlew -p luartz-sample-app bootRun
 ```
 
-If you are using Spring Boot run configuration in IntelliJ Idea, enable env file:
+If you are using Spring Boot run configuration in IntelliJ IDEA or similar, enable env file:
 ![enable-env-file-idea.png](assets/enable-env-file-idea.png)
 
 

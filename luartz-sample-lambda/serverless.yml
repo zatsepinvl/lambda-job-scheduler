@@ -1,0 +1,25 @@
+service: my-service
+
+provider:
+  name: aws
+  runtime: java11
+  stage: local
+  region: us-east-1
+
+package:
+  artifact: build/libs/luartz-sample-lambda-1.0-SNAPSHOT-all.jar
+
+plugins:
+  - serverless-localstack
+
+custom:
+  localstack:
+    stages:
+      - local
+
+functions:
+  sample:
+    handler: org.luartz.lambda.Handler::handleRequest
+    name: Sample
+    memorySize: 256
+    timeout: 10

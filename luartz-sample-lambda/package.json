@@ -1,0 +1,14 @@
+{
+  "name": "luartz-sample-lambda",
+  "version": "1.0.0",
+  "scripts": {
+    "deploy": "serverless deploy",
+    "invoke": "serverless invoke --function Sample",
+    "serverless": "serverless"
+  },
+  "devDependencies": {
+    "serverless": "^3.22.0",
+    "serverless-deployment-bucket": "^1.5.1",
+    "serverless-localstack": "^0.4.35"
+  }
+}

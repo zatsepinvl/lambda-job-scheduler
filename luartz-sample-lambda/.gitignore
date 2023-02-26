@@ -1,0 +1,9 @@
+# Gradle
+.gradle
+build
+
+# npm
+node_modules
+
+# serverless
+.serverless

@@ -94,7 +94,13 @@ If you are using Spring Boot run configuration in IntelliJ IDEA or similar, enab
 See [luartz-sample-app](luartz-sample-app/src/main/kotlin/org/luartz/app/LuartzSampleApp.kt) for a complete example app.
 
 
-## Architecture
+## Concepts
+* **Scheduler** - primary orchestrator component responsible for scheduling job and submitting jobs from provided _JobTemplates_.
+* **Job** - data class describing a single job execution.
+* **JobTemplate** - template to create a job from.* 
+* **JobStore** - repository for created/running/executed jobs.
+* **Trigger** - a component that determines the schedule upon which a given Job will be performed.
+* **LambdaDefinition** - data class for defining required data to deploy and invoke a particular AWS Lambda function.
 
 ### Logical Architecture
 ![logical-architecture.png](assets/logical-architecture.png)

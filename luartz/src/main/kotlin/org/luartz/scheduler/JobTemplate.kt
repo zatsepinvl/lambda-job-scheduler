@@ -17,6 +17,7 @@ data class JobTemplate(
 fun JobTemplate.toJobWithId(id: String, createdAt: Instant): Job {
     return Job(
         id = id,
+        templateId = this.id,
         name = this.jobName,
         createdAt = createdAt,
         lambda = this.lambda,

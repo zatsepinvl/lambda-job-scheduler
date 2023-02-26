@@ -6,6 +6,8 @@ import org.luartz.job.JobState
 import org.luartz.store.JobStore
 import org.luartz.store.MutableJobStore
 import org.luartz.util.WorkerThread
+import org.luartz.util.defaultUtcClock
+import org.luartz.util.toUtcDate
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Clock
@@ -17,7 +19,7 @@ import kotlin.math.max
 internal class SchedulerImpl(
     private val executor: JobExecutor,
     private val store: MutableJobStore,
-    private val clock: Clock = Clock.systemDefaultZone()
+    private val clock: Clock = defaultUtcClock()
 ) : Scheduler {
     private val logger: Logger = LoggerFactory.getLogger(SchedulerImpl::class.java)
 
@@ -70,6 +72,10 @@ internal class SchedulerImpl(
         return "${jobName}:${randomUUID()}"
     }
 
+    private fun isUnscheduled(templateId: String): Boolean {
+        return !templates.containsKey(templateId)
+    }
+
     private inner class SchedulerThread : WorkerThread("LambdaJobScheduler") {
         private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
@@ -79,19 +85,24 @@ internal class SchedulerImpl(
         }
 
         override fun onShutdown() {
+            // ToDo: shutdown service properly
             scheduledExecutorService.shutdown()
         }
 
         private fun scheduleJobRecurring(template: JobTemplate) {
+            if (isUnscheduled(template.id)) {
+                return
+            }
+
             val trigger = template.trigger
-            if (!trigger.mayFireAgain()) {
+            if (!trigger.canFire()) {
                 // means that trigger is now longer active
                 return
             }
 
             // Calculate delay time to submit job
+            val nextFireTime = trigger.nextFireTime(clock)
             val now = clock.instant()
-            val nextFireTime = trigger.nextFireTime()
             val delayMillis = max(nextFireTime.toEpochMilli() - now.toEpochMilli(), 0)
 
             // Create job from template
@@ -105,12 +116,15 @@ internal class SchedulerImpl(
                         submitForExecution(job, template)
                     } catch (throwable: Throwable) {
                         logger.error("Error while submitting job ${job.id} for execution", throwable)
+                    } finally {
+                        // Make scheduling recurring
+                        scheduleQueue.add(template)
                     }
                 },
                 delayMillis, TimeUnit.MILLISECONDS
             )
 
-            // Store scheduled job
+            logger.debug("Job ${job.id} is scheduled for submission at ${executionAt.toUtcDate()} in ${delayMillis / 1000} seconds")
             store.save(job)
         }
 
@@ -122,14 +136,11 @@ internal class SchedulerImpl(
         }
 
         private fun submitForExecution(job: Job, template: JobTemplate) {
-            if (!templates.containsKey(template.id)) {
-                // Skip execution if template was unscheduled
+            if (isUnscheduled(template.id)) {
                 return
             }
             executionQueue.add(job)
-            template.trigger.updateAfterFired()
-            // Make scheduling recurring
-            scheduleQueue.add(template)
+            template.trigger.whenFired()
         }
     }
 
@@ -143,10 +154,14 @@ internal class SchedulerImpl(
         }
 
         override fun onShutdown() {
+            // ToDo: shutdown service properly
             executorService.shutdown()
         }
 
         private fun executeJobAsync(job: Job) {
+            if (isUnscheduled(job.templateId)) {
+                return
+            }
             CompletableFuture
                 .supplyAsync({ prepareJob(job) }, executorService)
                 .thenCompose { executeJob(it) }

@@ -11,7 +11,7 @@ Quartz-like job scheduler based on AWS Lambda
 | Submitting job                           | ✅ Implemented     |
 | Scheduling one-off job                   | ✅ Implemented     |
 | Scheduling recurring job                 | ✅ Implemented     |
-| Scheduling cron job                      | 🏃 Coming soon... |
+| Scheduling cron job                      | ✅ Implemented     |
 | Unscheduling job                         | ✅ Implemented     |
 | Accessing job details in lambda function | ✅ Implemented     |
 | Getting jobs statuses                    | ✅ Implemented     |

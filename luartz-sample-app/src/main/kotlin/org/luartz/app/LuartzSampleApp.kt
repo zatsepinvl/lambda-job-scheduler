@@ -3,6 +3,8 @@ package org.luartz.app
 import org.luartz.job.LambdaDefinition
 import org.luartz.scheduler.JobTemplate
 import org.luartz.scheduler.SchedulerFabric
+import org.luartz.store.InMemoryJobStore
+import org.luartz.trigger.CronTrigger
 import org.luartz.trigger.IntervalTrigger
 import org.luartz.trigger.OneOffTrigger
 import org.springframework.boot.CommandLineRunner
@@ -27,20 +29,17 @@ fun main(args: Array<String>) {
 class AppRunner : CommandLineRunner {
     override fun run(vararg args: String?) {
         // Init for test
-        // val scheduler = SchedulerFabric.create(InMemoryJobStore(), DummyJobExecutor())
+        val scheduler = SchedulerFabric.create(InMemoryJobStore(), DummyJobExecutor())
 
         // Init for real lambda invocation
-        val scheduler = SchedulerFabric.createDefault()
+        // val scheduler = SchedulerFabric.createDefault()
 
         val store = scheduler.getJobStore()
-
         val lambdaDefinition = LambdaDefinition("Sample")
-        val payload = mapOf(
-            "key" to "value"
-        )
+        val payload = mapOf("key" to "value")
 
         // Schedule a recurrent job
-        val intervalTrigger = IntervalTrigger(startAt = Instant.now(), interval = Duration.ofSeconds(10))
+        val intervalTrigger = IntervalTrigger(startAt = Instant.now(), interval = Duration.ofSeconds(5))
         scheduler.schedule(
             JobTemplate(
                 id = "RecurrentTestJob",
@@ -65,11 +64,7 @@ class AppRunner : CommandLineRunner {
         // Start
         scheduler.start()
 
-        // Get job templates
-        println("Job templates: ${scheduler.getJobTemplates()}")
-
-        println("Sleeping for 10 seconds...")
-        Thread.sleep(10000)
+        sleepForSeconds(10)
 
         // Unschedule
         println("Unscheduling recurrent job")
@@ -83,18 +78,22 @@ class AppRunner : CommandLineRunner {
                 jobName = "LateSubmittedJob",
                 lambda = lambdaDefinition,
                 payload = payload,
-                trigger = intervalTrigger
+                trigger = CronTrigger("*/2 * * * * ?")
             )
         )
 
-        // Print jobs
-        val jobs = store.getJobsByName("RecurrentTestJob")
-        println(jobs)
+        sleepForSeconds(10)
 
-        println("Sleeping for 10 seconds...")
-        Thread.sleep(5000)
+        // Print current state
+        println("Job templates: ${scheduler.getJobTemplates()}")
+        println("Jobs: ${store.getJobsByName("RecurrentTestJob")}")
 
         println("Shutting down scheduler...")
         scheduler.shutdown()
     }
+}
+
+private fun sleepForSeconds(seconds: Long) {
+    println("Sleeping for $seconds seconds...")
+    Thread.sleep(seconds * 1000)
 }

@@ -1,7 +1,8 @@
 package org.luartz.trigger
 
-import java.time.Clock
+import org.luartz.util.defaultUtcClock
+import java.time.Instant
 
 class NowTrigger(
-    clock: Clock = Clock.systemDefaultZone(),
-) : OneOffTrigger(clock.instant())
+    now: Instant = defaultUtcClock().instant(),
+) : OneOffTrigger(now)

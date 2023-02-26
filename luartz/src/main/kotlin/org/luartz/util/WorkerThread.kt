@@ -3,7 +3,7 @@ package org.luartz.util
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class WorkerThreadException(message: String?, cause: Throwable?) : RuntimeException(message, cause)
+internal class WorkerThreadException(message: String?, cause: Throwable?) : RuntimeException(message, cause)
 
 internal abstract class WorkerThread(name: String) : Thread(name) {
     private val logger: Logger = LoggerFactory.getLogger(WorkerThread::class.java)
@@ -18,7 +18,7 @@ internal abstract class WorkerThread(name: String) : Thread(name) {
                 if (!terminated) throw WorkerThreadException("Unexpected interrupted exception", exception)
                 // else do nothing
             } catch (throwable: Throwable) {
-                logger.error("Unexpected error while working", throwable)
+                logger.error("Unexpected error while running", throwable)
             }
         }
     }

@@ -3,6 +3,7 @@ package org.luartz.executor
 import org.luartz.job.Job
 import org.luartz.json.Json
 import org.luartz.json.defaultJson
+import org.luartz.util.defaultUtcClock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.SdkBytes
@@ -15,7 +16,7 @@ import java.util.concurrent.CompletableFuture
 class LambdaJobExecutor(
     private val lambdaClient: LambdaAsyncClient,
     private val json: Json = defaultJson(),
-    private val clock: Clock = Clock.systemDefaultZone()
+    private val clock: Clock = defaultUtcClock()
 ) : JobExecutor {
 
     private val logger: Logger = LoggerFactory.getLogger(LambdaJobExecutor::class.java)

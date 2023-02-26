@@ -1,11 +1,12 @@
 package org.luartz.trigger
 
+import java.time.Clock
 import java.time.Instant
 
 interface Trigger {
-    fun mayFireAgain(): Boolean
+    fun nextFireTime(clock: Clock): Instant
 
-    fun nextFireTime(): Instant
+    fun canFire(): Boolean = true
 
-    fun updateAfterFired()
+    fun whenFired() {}
 }

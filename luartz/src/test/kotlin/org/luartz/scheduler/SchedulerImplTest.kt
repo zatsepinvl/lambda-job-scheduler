@@ -8,15 +8,14 @@ import org.luartz.job.Job
 import org.luartz.job.JobState
 import org.luartz.job.LambdaDefinition
 import org.luartz.store.MutableJobStore
+import org.luartz.trigger.IntervalTrigger
 import org.luartz.trigger.NowTrigger
 import org.luartz.trigger.Trigger
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.times
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.lang.Thread.sleep
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture.completedFuture
 
@@ -72,6 +71,33 @@ class SchedulerImplTest {
                 JobState.SUCCEEDED
             )
         }
+    }
+
+    @Test
+    // ToDo: might be flaky due to high dependency on timing
+    fun unscheduleScheduledJob() {
+        // Given
+        val template = givenTestJobTemplate(
+            trigger = IntervalTrigger(Instant.now(), Duration.ofSeconds(1))
+        )
+
+        // When
+        scheduler.schedule(template)
+        scheduler.start()
+        // Give time to schedule a job
+        sleep(100)
+        scheduler.unschedule(template.id)
+        // Given time to invoke scheduled submit
+        sleep(1000)
+        scheduler.shutdown()
+
+        // Then
+        argumentCaptor<Job> {
+            verify(store, times(1)).save(capture())
+            assertThat(firstValue.state).isEqualTo(JobState.SCHEDULED)
+        }
+
+        verify(executor, never()).execute(any())
     }
 
     private fun givenTestJobTemplate(trigger: Trigger = NowTrigger()): JobTemplate {

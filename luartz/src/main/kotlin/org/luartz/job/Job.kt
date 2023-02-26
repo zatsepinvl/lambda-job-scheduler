@@ -5,6 +5,7 @@ import java.time.Instant
 
 data class Job(
     val id: String,
+    val templateId: String,
     val name: String,
     val lambda: LambdaDefinition,
     val payload: Any?,

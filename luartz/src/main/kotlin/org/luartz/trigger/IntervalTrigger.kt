@@ -7,11 +7,8 @@ import java.time.Instant
 class IntervalTrigger(
     val startAt: Instant,
     val interval: Duration,
-    private val clock: Clock = Clock.systemDefaultZone(),
 ) : Trigger {
-    override fun mayFireAgain() = true
-
-    override fun nextFireTime(): Instant {
+    override fun nextFireTime(clock: Clock): Instant {
         val now = clock.instant()
         return if (now.isBefore(startAt)) {
             startAt.plusMillis(interval.toMillis())
@@ -20,6 +17,4 @@ class IntervalTrigger(
             startAt.plusMillis(interval.toMillis() * (k + 1))
         }
     }
-
-    override fun updateAfterFired() {}
 }

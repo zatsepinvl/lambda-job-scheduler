@@ -16,6 +16,8 @@ repositories {
     mavenCentral()
 }
 
+
+
 dependencies {
     // Luartz
     implementation project(":luartz")
@@ -41,4 +43,12 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+bootRun {
+    file(".env.local").readLines().each() {
+        def (key, value) = it.tokenize("=")
+        println("Found env $key=$value")
+        environment key, value
+    }
 }

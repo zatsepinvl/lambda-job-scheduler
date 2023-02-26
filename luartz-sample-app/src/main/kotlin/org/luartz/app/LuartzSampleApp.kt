@@ -1,6 +1,6 @@
 package org.luartz.app
 
-import org.luartz.job.JobDefinition
+import org.luartz.job.LambdaDefinition
 import org.luartz.scheduler.JobTemplate
 import org.luartz.scheduler.SchedulerFabric
 import org.luartz.trigger.IntervalTrigger
@@ -34,7 +34,7 @@ class AppRunner : CommandLineRunner {
 
         val store = scheduler.jobStore
 
-        val jobDefinition = JobDefinition("Sample")
+        val lambdaDefinition = LambdaDefinition("Sample")
         val payload = mapOf(
             "key" to "value"
         )
@@ -45,7 +45,7 @@ class AppRunner : CommandLineRunner {
             JobTemplate(
                 id = "RecurrentTestJob",
                 jobName = "RecurrentTestJob",
-                definition = jobDefinition,
+                lambda = lambdaDefinition,
                 payload = payload,
                 trigger = intervalTrigger
             )
@@ -56,7 +56,7 @@ class AppRunner : CommandLineRunner {
             JobTemplate(
                 id = "OneOffTestJob",
                 jobName = "OneOffTestJob",
-                definition = jobDefinition,
+                lambda = lambdaDefinition,
                 payload = payload,
                 trigger = OneOffTrigger(Instant.now().plusSeconds(10))
             )
@@ -81,7 +81,7 @@ class AppRunner : CommandLineRunner {
             JobTemplate(
                 id = "LateSubmittedJob",
                 jobName = "LateSubmittedJob",
-                definition = jobDefinition,
+                lambda = lambdaDefinition,
                 payload = payload,
                 trigger = intervalTrigger
             )

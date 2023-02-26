@@ -5,8 +5,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.luartz.executor.JobExecutor
 import org.luartz.job.Job
-import org.luartz.job.JobDefinition
 import org.luartz.job.JobState
+import org.luartz.job.LambdaDefinition
 import org.luartz.store.MutableJobStore
 import org.luartz.trigger.NowTrigger
 import org.luartz.trigger.Trigger
@@ -78,7 +78,7 @@ class SchedulerImplTest {
         return JobTemplate(
             id = "test_tempalte",
             jobName = "test_name",
-            definition = JobDefinition("test_function"),
+            lambda = LambdaDefinition("test_function"),
             payload = "test_payload",
             trigger = trigger
         )

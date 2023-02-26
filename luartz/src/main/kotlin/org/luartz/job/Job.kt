@@ -6,7 +6,7 @@ import java.time.Instant
 data class Job(
     val id: String,
     val name: String,
-    val definition: JobDefinition,
+    val lambda: LambdaDefinition,
     val payload: Any?,
     val state: JobState,
     val trigger: Trigger,

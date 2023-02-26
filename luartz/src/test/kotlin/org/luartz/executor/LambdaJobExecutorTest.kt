@@ -73,7 +73,7 @@ class LambdaJobExecutorTest {
             val request = firstValue
 
             // Verify lambda params
-            assertThat(request.functionName()).isEqualTo(runningJob.definition.functionName)
+            assertThat(request.functionName()).isEqualTo(runningJob.lambda.functionName)
 
             // Verify payload
             val payload = defaultJson().parse(request.payload().asUtf8String(), JobExecutionPayload::class.java)

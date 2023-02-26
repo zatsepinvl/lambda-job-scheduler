@@ -26,7 +26,7 @@ class LambdaJobExecutor(
             .toJsonString(json)
         val payloadBytes: SdkBytes = SdkBytes.fromUtf8String(payload)
         val request = InvokeRequest.builder()
-            .functionName(job.definition.functionName)
+            .functionName(job.lambda.functionName)
             .payload(payloadBytes)
             .build()
 

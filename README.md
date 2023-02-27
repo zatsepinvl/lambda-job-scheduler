@@ -61,7 +61,7 @@ sheudler.schedule(jobTemplate)
 Get jobs statuses by name:
 
 ```kotlin
-val store = scheduler.jobStore
+val store = scheduler.getJobStore()
 val jobs = store.getJobsByName("MyJob")
 ```
 
@@ -97,9 +97,9 @@ See [luartz-sample-app](luartz-sample-app/src/main/kotlin/org/luartz/app/LuartzS
 
 
 ## Concepts
-* **Scheduler** - primary orchestrator component responsible for scheduling job and submitting jobs from provided _JobTemplates_.
+* **Scheduler** - primary orchestrator component responsible for scheduling and submitting jobs from provided _JobTemplates_.
 * **Job** - data class describing a single job execution.
-* **JobTemplate** - template to create a job from.* 
+* **JobTemplate** - template to create a job from.
 * **JobStore** - repository for created/running/executed jobs.
 * **Trigger** - a component that determines the schedule upon which a given Job will be performed.
 * **LambdaDefinition** - data class for defining required data to deploy and invoke a particular AWS Lambda function.

@@ -39,9 +39,9 @@ internal class SchedulerImpl(
     private val scheduleQueue = ScheduleQueue()
     private val executionQueue = ExecutionQueue()
 
-    private val deployerWorker = DeployerWorker()
-    private val schedulerWorker = SchedulerWorker()
-    private val executorWorker = ExecutorWorker()
+    private val deploymentWorker = DeploymentWorker()
+    private val schedulingWorker = SchedulingWorker()
+    private val executionWorker = ExecutionWorker()
 
     private val templates: MutableMap<String, JobTemplate> = ConcurrentHashMap()
 
@@ -68,9 +68,9 @@ internal class SchedulerImpl(
     }
 
     override fun start() {
-        deployerWorker.start()
-        schedulerWorker.start()
-        executorWorker.start()
+        deploymentWorker.start()
+        schedulingWorker.start()
+        executionWorker.start()
     }
 
     override fun shutdown() {
@@ -78,9 +78,9 @@ internal class SchedulerImpl(
         executorService.shutdown()
         scheduledExecutorService.shutdown()
 
-        deployerWorker.shutdown()
-        schedulerWorker.shutdown()
-        executorWorker.shutdown()
+        deploymentWorker.shutdown()
+        schedulingWorker.shutdown()
+        executionWorker.shutdown()
     }
 
     override fun getJobStore(): JobStore {
@@ -96,7 +96,7 @@ internal class SchedulerImpl(
     }
 
     // Deployment
-    private inner class DeployerWorker : WorkerThread("JobDeploymentWorker") {
+    private inner class DeploymentWorker : WorkerThread("JobDeploymentWorker") {
 
         override fun runInInfiniteLoop() {
             val template = deploymentQueue.take()
@@ -120,7 +120,7 @@ internal class SchedulerImpl(
     }
 
     // Scheduling
-    private inner class SchedulerWorker : WorkerThread("JobScheduleWorker") {
+    private inner class SchedulingWorker : WorkerThread("JobSchedulingWorker") {
 
         override fun runInInfiniteLoop() {
             val template = scheduleQueue.take()
@@ -187,7 +187,7 @@ internal class SchedulerImpl(
     }
 
     // Execution
-    private inner class ExecutorWorker : WorkerThread("JobExecutionWorker") {
+    private inner class ExecutionWorker : WorkerThread("JobExecutionWorker") {
         override fun runInInfiniteLoop() {
             val job = executionQueue.take()
             executeJobAsync(job)

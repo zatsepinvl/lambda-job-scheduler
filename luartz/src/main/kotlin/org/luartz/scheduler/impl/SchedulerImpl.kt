@@ -113,11 +113,10 @@ internal class SchedulerImpl(
                     scheduleQueue.add(template)
                 } catch (throwable: Throwable) {
                     logger.error(
-                        "Unable to deploy function from template ${template.id}:${template.jobName}",
+                        "Unable to deploy function from template ${template.id} for job ${template.jobName}",
                         throwable
                     )
                 }
-
             }
         }
     }

@@ -14,3 +14,5 @@ Hours,Task
 4,Use async lambda invocation
 2,In-memory store thread safety
 4,Add sample lambda
+2,Add job deployer
+2,Failed attempt to use async clients; switch back to sync one

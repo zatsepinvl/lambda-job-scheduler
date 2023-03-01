@@ -1,6 +1,7 @@
-package org.luartz.scheduler
+package org.luartz.scheduler.impl
 
 import org.luartz.job.Job
+import org.luartz.scheduler.JobTemplate
 import java.util.concurrent.LinkedBlockingQueue
 
 // ToDo: review the choice of LinkedBlockingQueue

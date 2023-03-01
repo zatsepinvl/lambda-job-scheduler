@@ -1,9 +1,13 @@
-package org.luartz.scheduler
+package org.luartz.scheduler.impl
 
 import org.luartz.deployer.JobDeployer
+import org.luartz.deployer.toDeploymentCommand
 import org.luartz.executor.JobExecutor
 import org.luartz.job.Job
 import org.luartz.job.JobState
+import org.luartz.scheduler.JobTemplate
+import org.luartz.scheduler.Scheduler
+import org.luartz.scheduler.toJobWithId
 import org.luartz.store.JobStore
 import org.luartz.store.MutableJobStore
 import org.luartz.util.WorkerThread
@@ -13,7 +17,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Instant
-import java.util.UUID.randomUUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
@@ -22,7 +26,7 @@ import kotlin.math.max
 
 internal class SchedulerImpl(
     private val store: MutableJobStore,
-    deployer: JobDeployer,
+    private val deployer: JobDeployer,
     private val executor: JobExecutor,
     private val clock: Clock = defaultUtcClock()
 ) : Scheduler {
@@ -31,13 +35,13 @@ internal class SchedulerImpl(
     private val executorService = Executors.newWorkStealingPool()
     private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
+    private val deploymentQueue = DeploymentQueue()
     private val scheduleQueue = ScheduleQueue()
     private val executionQueue = ExecutionQueue()
-    private val deploymentQueue = DeploymentQueue()
 
-    private val schedulerThread = SchedulerThread()
-    private val executorThread = ExecutorThread()
-    private val deployerThread = DeployerThread(deploymentQueue, scheduleQueue, executorService, deployer)
+    private val deployerWorker = DeployerWorker()
+    private val schedulerWorker = SchedulerWorker()
+    private val executorWorker = ExecutorWorker()
 
     private val templates: MutableMap<String, JobTemplate> = ConcurrentHashMap()
 
@@ -64,9 +68,9 @@ internal class SchedulerImpl(
     }
 
     override fun start() {
-        deployerThread.start()
-        schedulerThread.start()
-        executorThread.start()
+        deployerWorker.start()
+        schedulerWorker.start()
+        executorWorker.start()
     }
 
     override fun shutdown() {
@@ -74,8 +78,9 @@ internal class SchedulerImpl(
         executorService.shutdown()
         scheduledExecutorService.shutdown()
 
-        schedulerThread.shutdown()
-        executorThread.shutdown()
+        deployerWorker.shutdown()
+        schedulerWorker.shutdown()
+        executorWorker.shutdown()
     }
 
     override fun getJobStore(): JobStore {
@@ -86,15 +91,36 @@ internal class SchedulerImpl(
         return templates.values.toList()
     }
 
-    private fun newJobId(jobName: String): String {
-        return "${jobName}:${randomUUID()}"
-    }
-
     private fun isUnscheduled(templateId: String): Boolean {
         return !templates.containsKey(templateId)
     }
 
-    private inner class SchedulerThread : WorkerThread("LambdaJobScheduler") {
+    // Deployment
+    private inner class DeployerWorker : WorkerThread("JobDeploymentWorker") {
+
+        override fun runInInfiniteLoop() {
+            val template = deploymentQueue.take()
+            deployAsync(template)
+        }
+
+        private fun deployAsync(template: JobTemplate) {
+            executorService.submit {
+                try {
+                    deployer.deploy(template.function.toDeploymentCommand())
+                    scheduleQueue.add(template)
+                } catch (throwable: Throwable) {
+                    logger.error(
+                        "Unable to deploy function from template ${template.id}:${template.jobName}",
+                        throwable
+                    )
+                }
+
+            }
+        }
+    }
+
+    // Scheduling
+    private inner class SchedulerWorker : WorkerThread("JobScheduleWorker") {
 
         override fun runInInfiniteLoop() {
             val template = scheduleQueue.take()
@@ -154,9 +180,14 @@ internal class SchedulerImpl(
             executionQueue.add(job)
             template.trigger.whenFired()
         }
+
+        private fun newJobId(jobName: String): String {
+            return "${jobName}:${UUID.randomUUID()}"
+        }
     }
 
-    private inner class ExecutorThread : WorkerThread("LambdaJobExecutor") {
+    // Execution
+    private inner class ExecutorWorker : WorkerThread("JobExecutionWorker") {
         override fun runInInfiniteLoop() {
             val job = executionQueue.take()
             executeJobAsync(job)

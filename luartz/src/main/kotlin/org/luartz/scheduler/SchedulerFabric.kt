@@ -5,6 +5,7 @@ import org.luartz.deployer.JobDeployer
 import org.luartz.deployer.LambdaJobDeployer
 import org.luartz.executor.JobExecutor
 import org.luartz.executor.LambdaJobExecutor
+import org.luartz.scheduler.impl.SchedulerImpl
 import org.luartz.store.InMemoryJobStore
 import org.luartz.store.MutableJobStore
 import software.amazon.awssdk.services.lambda.LambdaClient

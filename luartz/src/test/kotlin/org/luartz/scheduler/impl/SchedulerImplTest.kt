@@ -1,4 +1,4 @@
-package org.luartz.scheduler
+package org.luartz.scheduler.impl
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -8,6 +8,8 @@ import org.luartz.executor.JobExecutor
 import org.luartz.job.Job
 import org.luartz.job.JobFunction
 import org.luartz.job.JobState
+import org.luartz.scheduler.JobTemplate
+import org.luartz.scheduler.Scheduler
 import org.luartz.store.MutableJobStore
 import org.luartz.trigger.IntervalTrigger
 import org.luartz.trigger.NowTrigger

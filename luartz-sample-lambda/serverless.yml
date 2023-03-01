@@ -1,4 +1,4 @@
-service: my-service
+service: luartz-sample
 
 provider:
   name: aws

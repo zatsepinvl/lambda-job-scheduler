@@ -3,10 +3,11 @@ package org.luartz.scheduler
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.luartz.deployer.JobDeployer
 import org.luartz.executor.JobExecutor
 import org.luartz.job.Job
+import org.luartz.job.JobFunction
 import org.luartz.job.JobState
-import org.luartz.job.LambdaDefinition
 import org.luartz.store.MutableJobStore
 import org.luartz.trigger.IntervalTrigger
 import org.luartz.trigger.NowTrigger
@@ -17,19 +18,19 @@ import org.mockito.kotlin.*
 import java.lang.Thread.sleep
 import java.time.Duration
 import java.time.Instant
-import java.util.concurrent.CompletableFuture.completedFuture
 
 class SchedulerImplTest {
-
-    private lateinit var executor: JobExecutor
     private lateinit var store: MutableJobStore
+    private lateinit var deployer: JobDeployer
+    private lateinit var executor: JobExecutor
     private lateinit var scheduler: Scheduler
 
     @BeforeEach
     fun setup() {
-        executor = mock()
         store = mock()
-        scheduler = SchedulerImpl(executor, store)
+        deployer = mock()
+        executor = mock()
+        scheduler = SchedulerImpl(store, deployer, executor)
     }
 
     @Test
@@ -104,7 +105,7 @@ class SchedulerImplTest {
         return JobTemplate(
             id = "test_tempalte",
             jobName = "test_name",
-            lambda = LambdaDefinition("test_function"),
+            function = JobFunction("test_function"),
             payload = "test_payload",
             trigger = trigger
         )
@@ -113,7 +114,7 @@ class SchedulerImplTest {
     private fun JobExecutor.mockSuccessInvocation() {
         whenever(this.execute(any())).thenAnswer {
             val job = it.arguments[0] as Job
-            completedFuture(job.succeedAt(Instant.now()))
+            job.succeedAt(Instant.now())
         }
     }
 

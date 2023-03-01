@@ -1,9 +1,8 @@
 package org.luartz.app
 
-import org.luartz.job.LambdaDefinition
+import org.luartz.job.JobFunction
 import org.luartz.scheduler.JobTemplate
 import org.luartz.scheduler.SchedulerFabric
-import org.luartz.store.InMemoryJobStore
 import org.luartz.trigger.CronTrigger
 import org.luartz.trigger.IntervalTrigger
 import org.luartz.trigger.OneOffTrigger
@@ -29,13 +28,13 @@ fun main(args: Array<String>) {
 class AppRunner : CommandLineRunner {
     override fun run(vararg args: String?) {
         // Init for test
-        val scheduler = SchedulerFabric.create(InMemoryJobStore(), DummyJobExecutor())
+        //val scheduler = SchedulerFabric.create(InMemoryJobStore(), DummyJobExecutor(), DummyJobDeployer())
 
         // Init for real lambda invocation
-        // val scheduler = SchedulerFabric.createDefault()
+        val scheduler = SchedulerFabric.createDefault()
 
         val store = scheduler.getJobStore()
-        val lambdaDefinition = LambdaDefinition("Sample")
+        val functionDefinition = JobFunction("Sample")
         val payload = mapOf("key" to "value")
 
         // Schedule a recurrent job
@@ -44,7 +43,7 @@ class AppRunner : CommandLineRunner {
             JobTemplate(
                 id = "RecurrentTestJob",
                 jobName = "RecurrentTestJob",
-                lambda = lambdaDefinition,
+                function = functionDefinition,
                 payload = payload,
                 trigger = intervalTrigger
             )
@@ -55,7 +54,7 @@ class AppRunner : CommandLineRunner {
             JobTemplate(
                 id = "OneOffTestJob",
                 jobName = "OneOffTestJob",
-                lambda = lambdaDefinition,
+                function = functionDefinition,
                 payload = payload,
                 trigger = OneOffTrigger(Instant.now().plusSeconds(10))
             )
@@ -76,7 +75,7 @@ class AppRunner : CommandLineRunner {
             JobTemplate(
                 id = "LateSubmittedJob",
                 jobName = "LateSubmittedJob",
-                lambda = lambdaDefinition,
+                function = functionDefinition,
                 payload = payload,
                 trigger = CronTrigger("*/2 * * * * ?")
             )

@@ -7,6 +7,7 @@ internal class WorkerThreadException(message: String?, cause: Throwable?) : Runt
 
 internal abstract class WorkerThread(name: String) : Thread(name) {
     private val logger: Logger = LoggerFactory.getLogger(WorkerThread::class.java)
+
     @Volatile
     private var terminated = false
 
@@ -29,7 +30,7 @@ internal abstract class WorkerThread(name: String) : Thread(name) {
         this.interrupt()
     }
 
-    abstract fun onShutdown()
+    open fun onShutdown() {}
 
     abstract fun runInInfiniteLoop()
 }

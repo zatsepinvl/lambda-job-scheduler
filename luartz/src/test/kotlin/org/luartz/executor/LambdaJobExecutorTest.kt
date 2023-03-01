@@ -7,13 +7,12 @@ import org.luartz.job.JobState
 import org.luartz.job.givenTestJob
 import org.luartz.json.defaultJson
 import org.mockito.kotlin.*
-import software.amazon.awssdk.services.lambda.LambdaAsyncClient
+import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.InvokeRequest
 import software.amazon.awssdk.services.lambda.model.InvokeResponse
-import java.util.concurrent.CompletableFuture.completedFuture
 
 class LambdaJobExecutorTest {
-    private lateinit var lambdaClient: LambdaAsyncClient
+    private lateinit var lambdaClient: LambdaClient
     private lateinit var executor: JobExecutor
 
     @BeforeEach
@@ -29,10 +28,10 @@ class LambdaJobExecutorTest {
         val response = InvokeResponse.builder()
             .statusCode(200)
             .build()
-        whenever(lambdaClient.invoke(any<InvokeRequest>())).thenReturn(completedFuture(response))
+        whenever(lambdaClient.invoke(any<InvokeRequest>())).thenReturn(response)
 
         // When
-        val executedJob = executor.execute(runningJob).get()
+        val executedJob = executor.execute(runningJob)
 
         // Then
         assertThat(executedJob.state).isEqualTo(JobState.SUCCEEDED)
@@ -50,7 +49,7 @@ class LambdaJobExecutorTest {
         whenLambdaInvoked(any(), response)
 
         // When
-        val executedJob = executor.execute(runningJob).get()
+        val executedJob = executor.execute(runningJob)
 
         // Then
         assertThat(executedJob.state).isEqualTo(JobState.FAILED)
@@ -73,7 +72,7 @@ class LambdaJobExecutorTest {
             val request = firstValue
 
             // Verify lambda params
-            assertThat(request.functionName()).isEqualTo(runningJob.lambda.functionName)
+            assertThat(request.functionName()).isEqualTo(runningJob.function.name)
 
             // Verify payload
             val payload = defaultJson().parse(request.payload().asUtf8String(), JobExecutionPayload::class.java)
@@ -84,6 +83,6 @@ class LambdaJobExecutorTest {
     }
 
     private fun whenLambdaInvoked(request: InvokeRequest, response: InvokeResponse) {
-        whenever(lambdaClient.invoke(request)).thenReturn(completedFuture(response))
+        whenever(lambdaClient.invoke(request)).thenReturn(response)
     }
 }

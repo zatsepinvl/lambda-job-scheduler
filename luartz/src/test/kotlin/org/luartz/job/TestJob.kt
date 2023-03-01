@@ -16,7 +16,7 @@ fun givenTestJob(
         createdAt = createdAt,
         state = JobState.CREATED,
         trigger = mock(),
-        lambda = LambdaDefinition(functionName = "testFunctionName"),
+        function = JobFunction(name = "testFunctionName"),
         payload = null
     )
 }

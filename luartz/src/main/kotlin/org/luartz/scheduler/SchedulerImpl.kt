@@ -1,5 +1,6 @@
 package org.luartz.scheduler
 
+import org.luartz.deployer.JobDeployer
 import org.luartz.executor.JobExecutor
 import org.luartz.job.Job
 import org.luartz.job.JobState
@@ -13,22 +14,30 @@ import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Instant
 import java.util.UUID.randomUUID
-import java.util.concurrent.*
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
 internal class SchedulerImpl(
-    private val executor: JobExecutor,
     private val store: MutableJobStore,
+    deployer: JobDeployer,
+    private val executor: JobExecutor,
     private val clock: Clock = defaultUtcClock()
 ) : Scheduler {
     private val logger: Logger = LoggerFactory.getLogger(SchedulerImpl::class.java)
 
-    // ToDo: review the choice of LinkedBlockingQueue
-    private val scheduleQueue: BlockingQueue<JobTemplate> = LinkedBlockingQueue()
-    private val executionQueue: BlockingQueue<Job> = LinkedBlockingQueue()
+    private val executorService = Executors.newWorkStealingPool()
+    private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+
+    private val scheduleQueue = ScheduleQueue()
+    private val executionQueue = ExecutionQueue()
+    private val deploymentQueue = DeploymentQueue()
 
     private val schedulerThread = SchedulerThread()
     private val executorThread = ExecutorThread()
+    private val deployerThread = DeployerThread(deploymentQueue, scheduleQueue, executorService, deployer)
 
     private val templates: MutableMap<String, JobTemplate> = ConcurrentHashMap()
 
@@ -37,7 +46,11 @@ internal class SchedulerImpl(
             throw IllegalArgumentException("Job template with id ${template.id} has already been added")
         }
         templates[template.id] = template
-        scheduleQueue.add(template)
+        if (template.function.deployment != null) {
+            deploymentQueue.add(template)
+        } else {
+            scheduleQueue.add(template)
+        }
     }
 
     override fun unschedule(templateId: String) {
@@ -51,11 +64,16 @@ internal class SchedulerImpl(
     }
 
     override fun start() {
+        deployerThread.start()
         schedulerThread.start()
         executorThread.start()
     }
 
     override fun shutdown() {
+        // ToDo: shutdown service properly
+        executorService.shutdown()
+        scheduledExecutorService.shutdown()
+
         schedulerThread.shutdown()
         executorThread.shutdown()
     }
@@ -77,16 +95,10 @@ internal class SchedulerImpl(
     }
 
     private inner class SchedulerThread : WorkerThread("LambdaJobScheduler") {
-        private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
         override fun runInInfiniteLoop() {
             val template = scheduleQueue.take()
             scheduleJobRecurring(template)
-        }
-
-        override fun onShutdown() {
-            // ToDo: shutdown service properly
-            scheduledExecutorService.shutdown()
         }
 
         private fun scheduleJobRecurring(template: JobTemplate) {
@@ -145,17 +157,9 @@ internal class SchedulerImpl(
     }
 
     private inner class ExecutorThread : WorkerThread("LambdaJobExecutor") {
-        // ToDo: better executor service?
-        private val executorService = Executors.newWorkStealingPool()
-
         override fun runInInfiniteLoop() {
             val job = executionQueue.take()
             executeJobAsync(job)
-        }
-
-        override fun onShutdown() {
-            // ToDo: shutdown service properly
-            executorService.shutdown()
         }
 
         private fun executeJobAsync(job: Job) {
@@ -163,9 +167,8 @@ internal class SchedulerImpl(
                 return
             }
             CompletableFuture
-                .supplyAsync({ prepareJob(job) }, executorService)
-                .thenCompose { executeJob(it) }
-                // Async is used to switch back to the current executor to gain more control
+                .supplyAsync({ saveJobAsRun(job) }, executorService)
+                .thenApplyAsync({ executeJob(it) }, executorService)
                 .whenCompleteAsync({ executedJob, throwable ->
                     if (throwable != null) {
                         handleJobExecutionError(job, throwable)
@@ -175,13 +178,13 @@ internal class SchedulerImpl(
                 }, executorService)
         }
 
-        private fun prepareJob(scheduledJob: Job): Job {
+        private fun saveJobAsRun(scheduledJob: Job): Job {
             val job = scheduledJob.runAt(clock.instant())
             store.save(job)
             return job
         }
 
-        private fun executeJob(runningJob: Job): CompletableFuture<Job> {
+        private fun executeJob(runningJob: Job): Job {
             logger.info("Starting executing job ${runningJob.id}")
             return executor.execute(runningJob)
         }

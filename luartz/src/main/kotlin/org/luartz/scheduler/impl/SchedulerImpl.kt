@@ -91,13 +91,16 @@ internal class SchedulerImpl(
         return templates.values.toList()
     }
 
+    private fun newJobId(jobName: String): String {
+        return "${jobName}:${UUID.randomUUID()}"
+    }
+
     private fun isUnscheduled(templateId: String): Boolean {
         return !templates.containsKey(templateId)
     }
 
     // Deployment
     private inner class DeploymentWorker : WorkerThread("JobDeploymentWorker") {
-
         override fun runInInfiniteLoop() {
             val template = deploymentQueue.take()
             deployAsync(template)
@@ -121,7 +124,6 @@ internal class SchedulerImpl(
 
     // Scheduling
     private inner class SchedulingWorker : WorkerThread("JobSchedulingWorker") {
-
         override fun runInInfiniteLoop() {
             val template = scheduleQueue.take()
             scheduleJobRecurring(template)
@@ -179,10 +181,6 @@ internal class SchedulerImpl(
             }
             executionQueue.add(job)
             template.trigger.whenFired()
-        }
-
-        private fun newJobId(jobName: String): String {
-            return "${jobName}:${UUID.randomUUID()}"
         }
     }
 

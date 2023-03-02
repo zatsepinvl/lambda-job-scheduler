@@ -12,10 +12,12 @@ import org.luartz.store.JobStore
 import org.luartz.store.MutableJobStore
 import org.luartz.util.WorkerThread
 import org.luartz.util.defaultUtcClock
+import org.luartz.util.shutdownGracefully
 import org.luartz.util.toUtcDate
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Clock
+import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -23,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
+
+private const val SHUTDOWN_TIMEOUT_SECONDS = 60L
 
 internal class SchedulerImpl(
     private val store: MutableJobStore,
@@ -44,8 +48,10 @@ internal class SchedulerImpl(
     private val executionWorker = ExecutionWorker()
 
     private val templates: MutableMap<String, JobTemplate> = ConcurrentHashMap()
+    private var shutdown = false
 
     override fun schedule(template: JobTemplate) {
+        ensureActive()
         if (templates.containsKey(template.id)) {
             throw IllegalArgumentException("Job template with id ${template.id} has already been added")
         }
@@ -58,8 +64,8 @@ internal class SchedulerImpl(
     }
 
     override fun unschedule(templateId: String) {
-        val template = templates[templateId]
-        if (template == null) {
+        ensureActive()
+        if (!templates.containsKey(templateId)) {
             throw IllegalArgumentException("Job template is not found by id $templateId")
         }
         templates.remove(templateId)
@@ -68,19 +74,23 @@ internal class SchedulerImpl(
     }
 
     override fun start() {
+        ensureActive()
         deploymentWorker.start()
         schedulingWorker.start()
         executionWorker.start()
     }
 
     override fun shutdown() {
-        // ToDo: shutdown service properly
-        executorService.shutdown()
-        scheduledExecutorService.shutdown()
+        ensureActive()
 
         deploymentWorker.shutdown()
         schedulingWorker.shutdown()
         executionWorker.shutdown()
+
+        executorService.shutdownGracefully(Duration.ofSeconds(SHUTDOWN_TIMEOUT_SECONDS))
+        scheduledExecutorService.shutdownGracefully(Duration.ofSeconds(SHUTDOWN_TIMEOUT_SECONDS))
+
+        shutdown = true
     }
 
     override fun getJobStore(): JobStore {
@@ -97,6 +107,12 @@ internal class SchedulerImpl(
 
     private fun isUnscheduled(templateId: String): Boolean {
         return !templates.containsKey(templateId)
+    }
+
+    private fun ensureActive() {
+        if (shutdown) {
+            throw IllegalStateException("Scheduler has been shut down")
+        }
     }
 
     // Deployment

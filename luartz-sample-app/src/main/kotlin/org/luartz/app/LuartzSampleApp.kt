@@ -1,5 +1,6 @@
 package org.luartz.app
 
+import org.luartz.job.DeploymentParams
 import org.luartz.job.JobFunction
 import org.luartz.scheduler.JobTemplate
 import org.luartz.scheduler.SchedulerFabric
@@ -34,7 +35,16 @@ class AppRunner : CommandLineRunner {
         val scheduler = SchedulerFabric.createDefault()
 
         val store = scheduler.getJobStore()
-        val functionDefinition = JobFunction("Sample")
+        val functionDefinition = JobFunction(
+            "Sample",
+            deployment = DeploymentParams(
+                // Assumes that start from repo root
+                codeZipPath = "luartz-sample-lambda/build/libs/luartz-sample-lambda-1.0-SNAPSHOT-all.jar",
+                handler = "org.luartz.lambda.Handler::handleRequest",
+                runtime = "java11",
+                roleArn = "sample"
+            )
+        )
         val payload = mapOf("key" to "value")
 
         // Schedule a recurrent job

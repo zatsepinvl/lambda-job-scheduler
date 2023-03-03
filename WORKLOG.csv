@@ -16,3 +16,4 @@ Hours,Task
 4,Add sample lambda
 2,Add job deployer
 2,Failed attempt to use async clients; switch back to sync one
+1,Thread safe lambda deployment

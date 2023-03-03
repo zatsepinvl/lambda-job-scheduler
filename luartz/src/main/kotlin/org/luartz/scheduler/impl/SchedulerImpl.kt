@@ -191,9 +191,6 @@ internal class SchedulerImpl(
         }
 
         private fun submitForExecution(job: Job, template: JobTemplate) {
-            if (isUnscheduled(template.id)) {
-                return
-            }
             executionQueue.add(job)
             template.trigger.whenFired()
         }

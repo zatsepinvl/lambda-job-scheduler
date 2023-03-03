@@ -1,2 +1,3 @@
-2023_02_15 - Decided to call the lib as Luartz to have short name for java package name and highlight similarities with Quartz
-2023_03_01 - Decided to use sync aws sdk client to gain more developability and maintainability over premature performance optimizations
+2023_02_15 - Decided to call the lib as Luartz to have short name for java package name and highlight similarities with Quartz.
+2023_03_01 - Decided to use sync aws sdk client to gain more developability and maintainability over premature performance optimizations.
+2023_03_03 - Decided to use async lambda invocation (via Event invocation type) to not to depend on lambda execution time that might be up to 15 minutes. Let the client to handle job execution results via AWS Lambda Destinations capability.

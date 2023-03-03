@@ -35,15 +35,16 @@ class AppRunner : CommandLineRunner {
         val scheduler = SchedulerFabric.createDefault()
 
         val store = scheduler.getJobStore()
+        val deploymentParams = DeploymentParams(
+            // Assumes that start from repo root
+            codeZipPath = "luartz-sample-lambda/build/libs/luartz-sample-lambda-1.0-SNAPSHOT-all.jar",
+            handler = "org.luartz.lambda.Handler::handleRequest",
+            runtime = "java11",
+            roleArn = "sample"
+        )
         val functionDefinition = JobFunction(
             "Sample",
-            deployment = DeploymentParams(
-                // Assumes that start from repo root
-                codeZipPath = "luartz-sample-lambda/build/libs/luartz-sample-lambda-1.0-SNAPSHOT-all.jar",
-                handler = "org.luartz.lambda.Handler::handleRequest",
-                runtime = "java11",
-                roleArn = "sample"
-            )
+            //deployment = deploymentParams
         )
         val payload = mapOf("key" to "value")
 

@@ -3,6 +3,7 @@ package org.luartz.executor
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.luartz.job.JobState
 import org.luartz.job.givenTestJob
 import org.luartz.json.defaultJson
@@ -34,26 +35,18 @@ class LambdaJobExecutorTest {
         val executedJob = executor.execute(runningJob)
 
         // Then
-        assertThat(executedJob.state).isEqualTo(JobState.SUCCEEDED)
+        assertThat(executedJob.state).isEqualTo(JobState.INVOKED)
     }
 
     @Test
     fun executeWithFailure() {
         // Given
         val runningJob = givenTestJob()
-        val functionError = "testFunctionError"
-        val response = InvokeResponse.builder()
-            .statusCode(200)
-            .functionError(functionError)
-            .build()
-        whenLambdaInvoked(any(), response)
+        val executionError = "testExecutionError"
+        whenLambdaInvokedWithError(any(), RuntimeException(executionError))
 
         // When
-        val executedJob = executor.execute(runningJob)
-
-        // Then
-        assertThat(executedJob.state).isEqualTo(JobState.FAILED)
-        assertThat(executedJob.executionError).isEqualTo(functionError)
+        assertThrows<RuntimeException>(executionError) { executor.execute(runningJob) }
     }
 
     @Test
@@ -84,5 +77,9 @@ class LambdaJobExecutorTest {
 
     private fun whenLambdaInvoked(request: InvokeRequest, response: InvokeResponse) {
         whenever(lambdaClient.invoke(request)).thenReturn(response)
+    }
+
+    private fun whenLambdaInvokedWithError(request: InvokeRequest, error: Throwable) {
+        whenever(lambdaClient.invoke(request)).thenThrow(error)
     }
 }

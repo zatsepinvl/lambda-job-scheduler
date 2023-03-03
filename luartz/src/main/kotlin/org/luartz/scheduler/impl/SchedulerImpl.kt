@@ -211,8 +211,7 @@ internal class SchedulerImpl(
                 return
             }
             CompletableFuture
-                .supplyAsync({ saveJobAsRun(job) }, executorService)
-                .thenApplyAsync({ executeJob(it) }, executorService)
+                .supplyAsync({ executeJob(job) }, executorService)
                 .whenCompleteAsync({ executedJob, throwable ->
                     if (throwable != null) {
                         handleJobExecutionError(job, throwable)
@@ -220,12 +219,6 @@ internal class SchedulerImpl(
                         handleJobExecuted(executedJob)
                     }
                 }, executorService)
-        }
-
-        private fun saveJobAsRun(scheduledJob: Job): Job {
-            val job = scheduledJob.runAt(clock.instant())
-            store.save(job)
-            return job
         }
 
         private fun executeJob(runningJob: Job): Job {
@@ -236,10 +229,10 @@ internal class SchedulerImpl(
         private fun handleJobExecuted(job: Job) {
             store.save(job)
 
-            if (job.state == JobState.SUCCEEDED) {
-                logger.info("Job ${job.id} was executed successfully")
+            if (job.state == JobState.INVOKED) {
+                logger.info("Job ${job.id} was invoked successfully")
             } else {
-                logger.error("Job ${job.id} execution failed with error ${job.executionError}")
+                logger.error("Job ${job.id} invocation failed with error ${job.executionError}")
             }
         }
 
@@ -247,7 +240,6 @@ internal class SchedulerImpl(
             logger.error("Error while executing job ${job.id}", throwable)
             val failedJob = job.failAt(clock.instant(), throwable.message ?: "unknown execution error")
             store.save(failedJob)
-            // ToDo: implement retry mechanism
         }
     }
 }

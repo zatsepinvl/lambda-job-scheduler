@@ -50,7 +50,7 @@ class SchedulerImplTest {
 
             val job = firstValue
             assertThat(job.name).isEqualTo(template.jobName)
-            assertThat(job.state).isEqualTo(JobState.RUNNING)
+            assertThat(job.state).isEqualTo(JobState.SCHEDULED)
         }
     }
 
@@ -65,13 +65,12 @@ class SchedulerImplTest {
 
         // Then
         argumentCaptor<Job> {
-            verify(store, times(3)).save(capture())
+            verify(store, times(2)).save(capture())
 
             // Save on scheduled, run and then executed successfully
             assertThat(allValues.map { it.state }).containsExactly(
                 JobState.SCHEDULED,
-                JobState.RUNNING,
-                JobState.SUCCEEDED
+                JobState.INVOKED
             )
         }
     }
@@ -116,7 +115,7 @@ class SchedulerImplTest {
     private fun JobExecutor.mockSuccessInvocation() {
         whenever(this.execute(any())).thenAnswer {
             val job = it.arguments[0] as Job
-            job.succeedAt(Instant.now())
+            job.invokedAt(Instant.now())
         }
     }
 

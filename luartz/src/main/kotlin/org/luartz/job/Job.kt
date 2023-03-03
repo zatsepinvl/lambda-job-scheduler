@@ -22,12 +22,8 @@ data class Job(
         return copy(state = JobState.SCHEDULED, scheduledExecutionAt = time)
     }
 
-    fun runAt(time: Instant): Job {
-        return copy(state = JobState.RUNNING, startedAt = time)
-    }
-
-    fun succeedAt(time: Instant): Job {
-        return copy(state = JobState.SUCCEEDED, stoppedAt = time)
+    fun invokedAt(time: Instant): Job {
+        return copy(state = JobState.INVOKED, stoppedAt = time)
     }
 
     fun failAt(time: Instant, error: String): Job {

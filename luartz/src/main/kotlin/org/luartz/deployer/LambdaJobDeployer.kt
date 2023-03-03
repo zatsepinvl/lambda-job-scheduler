@@ -1,6 +1,6 @@
 package org.luartz.deployer
 
-import org.luartz.executor.LambdaJobExecutor
+import org.luartz.util.ConcurrentHashLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.SdkBytes
@@ -13,15 +13,22 @@ class LambdaJobDeployer(
     private val lambda: LambdaClient
 ) : JobDeployer {
 
-    private val logger: Logger = LoggerFactory.getLogger(LambdaJobExecutor::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(LambdaJobDeployer::class.java)
+    private val lock = ConcurrentHashLock()
 
     override fun deploy(command: DeploymentCommand): DeploymentResult {
+        // Put deployment for the same functionNames in order to prevent function creation race conditions
+        return lock.whenAcquire(command.functionName) {
+            doDeploy(command)
+        }
+    }
 
+    private fun doDeploy(command: DeploymentCommand): DeploymentResult {
         val functionName = command.functionName
         val lambdaResponse = getLambda(functionName)
         if (lambdaResponse != null) {
             val currentRuntime = lambdaResponse.configuration().runtime().name
-            if (currentRuntime != command.runtime) {
+            if (currentRuntime.lowercase() != command.runtime.lowercase()) {
                 throw LambdaJobDeploymentException(
                     "Existing lambda $functionName has different runtime: expected ${command.runtime}, but actual is $currentRuntime"
                 )
@@ -33,13 +40,18 @@ class LambdaJobDeployer(
                     "Existing lambda $functionName has different handler: expected ${command.handler}, but actual is $handler"
                 )
             }
-            logger.debug("Lambda function $functionName already exists. Skipping deployment")
+            logger.debug("Lambda function $functionName already exists. Skipping deployment.")
             return DeploymentResult(status = DeploymentStatus.SKIPPED)
         } else {
+            logger.debug("Deploying lambda function $functionName...")
+
             createFunction(command)
+
+            logger.debug("Lambda function $functionName deployed successfully")
             return DeploymentResult(status = DeploymentStatus.CREATED)
         }
     }
+
 
     private fun getLambda(name: String): GetFunctionResponse? {
         val getFunctionRequest = getFunctionRequest(name)

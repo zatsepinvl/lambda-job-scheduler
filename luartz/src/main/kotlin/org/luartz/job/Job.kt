@@ -12,21 +12,20 @@ data class Job(
     val state: JobState,
     val trigger: Trigger,
     val createdAt: Instant,
-    val scheduledExecutionAt: Instant? = null,
-    val startedAt: Instant? = null,
-    val stoppedAt: Instant? = null,
-    val executionError: String? = null
+    val scheduledSubmissionAt: Instant? = null,
+    val submittedAt: Instant? = null,
+    val submissionError: String? = null
 ) {
     // ToDo: implement state machine invariant validation
-    fun scheduleExecutionAt(time: Instant): Job {
-        return copy(state = JobState.SCHEDULED, scheduledExecutionAt = time)
+    fun scheduleSubmissionAt(time: Instant): Job {
+        return copy(state = JobState.SCHEDULED, scheduledSubmissionAt = time)
     }
 
-    fun invokedAt(time: Instant): Job {
-        return copy(state = JobState.INVOKED, stoppedAt = time)
+    fun submitAt(time: Instant): Job {
+        return copy(state = JobState.SUBMITTED, submittedAt = time)
     }
 
-    fun failAt(time: Instant, error: String): Job {
-        return copy(state = JobState.FAILED, stoppedAt = time, executionError = error)
+    fun submissionFailAt(time: Instant, error: String): Job {
+        return copy(state = JobState.SUBMISSION_FAILED, submittedAt = time, submissionError = error)
     }
 }

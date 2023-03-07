@@ -3,20 +3,20 @@ package org.luartz.executor
 import org.luartz.job.Job
 import org.luartz.json.Json
 
-data class JobExecutionPayload(
-    val job: JobExecutionData,
+data class FunctionInvocationPayload(
+    val job: JobInvocationData,
     val payload: Any?
 )
 
-data class JobExecutionData(
+data class JobInvocationData(
     val id: String,
     val name: String,
     // Might be extended in the future
 )
 
-fun Job.toExecutionPayload(): JobExecutionPayload {
-    return JobExecutionPayload(
-        job = JobExecutionData(
+fun Job.toInvocationPayload(): FunctionInvocationPayload {
+    return FunctionInvocationPayload(
+        job = JobInvocationData(
             id = this.id,
             name = this.name
         ),
@@ -24,6 +24,6 @@ fun Job.toExecutionPayload(): JobExecutionPayload {
     )
 }
 
-fun JobExecutionPayload.toJsonString(json: Json): String {
+fun FunctionInvocationPayload.toJsonString(json: Json): String {
     return json.stringify(this)
 }

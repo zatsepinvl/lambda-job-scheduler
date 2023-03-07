@@ -11,15 +11,15 @@ import software.amazon.awssdk.services.lambda.model.InvokeRequest
 import java.time.Clock
 
 
-class LambdaJobExecutor(
+class LambdaJobSubmitter(
     private val lambda: LambdaClient,
     private val json: Json = defaultJson(),
     private val clock: Clock = defaultUtcClock()
-) : JobExecutor {
+) : JobSubmitter {
 
-    override fun execute(job: Job): Job {
+    override fun submit(job: Job): Job {
         val payload = job
-            .toExecutionPayload()
+            .toInvocationPayload()
             .toJsonString(json)
         val payloadBytes: SdkBytes = SdkBytes.fromUtf8String(payload)
         val request = InvokeRequest.builder()
@@ -30,6 +30,6 @@ class LambdaJobExecutor(
 
         // ToDo: try/catch with retry mechanism in case of recoverable error
         lambda.invoke(request)
-        return job.invokedAt(clock.instant())
+        return job.submitAt(clock.instant())
     }
 }

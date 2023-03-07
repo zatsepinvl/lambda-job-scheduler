@@ -2,7 +2,7 @@ package org.luartz.scheduler.impl
 
 import org.luartz.deployer.JobDeployer
 import org.luartz.deployer.toDeploymentCommand
-import org.luartz.executor.JobExecutor
+import org.luartz.executor.JobSubmitter
 import org.luartz.job.Job
 import org.luartz.job.JobState
 import org.luartz.scheduler.JobTemplate
@@ -31,7 +31,7 @@ private const val SHUTDOWN_TIMEOUT_SECONDS = 60L
 internal class SchedulerImpl(
     private val store: MutableJobStore,
     private val deployer: JobDeployer,
-    private val executor: JobExecutor,
+    private val executor: JobSubmitter,
     private val clock: Clock = defaultUtcClock()
 ) : Scheduler {
     private val logger: Logger = LoggerFactory.getLogger(SchedulerImpl::class.java)
@@ -41,11 +41,11 @@ internal class SchedulerImpl(
 
     private val deploymentQueue = DeploymentQueue()
     private val scheduleQueue = ScheduleQueue()
-    private val executionQueue = ExecutionQueue()
+    private val submissionQueue = SubmissionQueue()
 
     private val deploymentWorker = DeploymentWorker()
     private val schedulingWorker = SchedulingWorker()
-    private val executionWorker = ExecutionWorker()
+    private val submissionWorker = SubmissionWorker()
 
     private val templates: MutableMap<String, JobTemplate> = ConcurrentHashMap()
     private var shutdown = false
@@ -77,7 +77,7 @@ internal class SchedulerImpl(
         ensureActive()
         deploymentWorker.start()
         schedulingWorker.start()
-        executionWorker.start()
+        submissionWorker.start()
     }
 
     override fun shutdown() {
@@ -85,7 +85,7 @@ internal class SchedulerImpl(
 
         deploymentWorker.shutdown()
         schedulingWorker.shutdown()
-        executionWorker.shutdown()
+        submissionWorker.shutdown()
 
         executorService.shutdownGracefully(Duration.ofSeconds(SHUTDOWN_TIMEOUT_SECONDS))
         scheduledExecutorService.shutdownGracefully(Duration.ofSeconds(SHUTDOWN_TIMEOUT_SECONDS))
@@ -161,17 +161,17 @@ internal class SchedulerImpl(
             val delayMillis = max(nextFireTime.toEpochMilli() - now.toEpochMilli(), 0)
 
             // Create job from template
-            val executionAt = now.plusMillis(delayMillis)
-            val job = newJobFromTemplate(template, executionAt)
+            val submissionAt = now.plusMillis(delayMillis)
+            val job = newJobFromTemplate(template, submissionAt)
 
-            // Schedule job submitting for execution
+            // Schedule job submitting for submission
             scheduledExecutorService.schedule(
                 {
                     try {
-                        executionQueue.add(job)
-                        template.trigger.whenFired()
+                        submissionQueue.add(job)
+                        trigger.whenFired()
                     } catch (throwable: Throwable) {
-                        logger.error("Error while submitting job ${job.id} for execution", throwable)
+                        logger.error("Error while submitting job ${job.id}", throwable)
                     } finally {
                         // Make scheduling recurring
                         scheduleQueue.add(template)
@@ -180,58 +180,58 @@ internal class SchedulerImpl(
                 delayMillis, TimeUnit.MILLISECONDS
             )
 
-            logger.debug("Job ${job.id} is scheduled for submission at ${executionAt.toUtcDate()} in ${delayMillis / 1000} seconds")
+            logger.debug("Job ${job.id} is scheduled for submission at ${submissionAt.toUtcDate()} in ${delayMillis / 1000} seconds")
             store.save(job)
         }
 
-        private fun newJobFromTemplate(template: JobTemplate, scheduleExecutionAt: Instant): Job {
+        private fun newJobFromTemplate(template: JobTemplate, scheduleSubmissionAt: Instant): Job {
             val jobId = newJobId(template.jobName)
             return template
                 .toJobWithId(jobId, clock.instant())
-                .scheduleExecutionAt(scheduleExecutionAt)
+                .scheduleSubmissionAt(scheduleSubmissionAt)
         }
     }
 
-    // Execution
-    private inner class ExecutionWorker : WorkerThread("JobExecutionWorker") {
+    // Submission
+    private inner class SubmissionWorker : WorkerThread("JobSubmissionWorker") {
         override fun runInInfiniteLoop() {
-            val job = executionQueue.take()
-            executeJobAsync(job)
+            val job = submissionQueue.take()
+            submitJobAsync(job)
         }
 
-        private fun executeJobAsync(job: Job) {
+        private fun submitJobAsync(job: Job) {
             if (isUnscheduled(job.templateId)) {
                 return
             }
             CompletableFuture
-                .supplyAsync({ executeJob(job) }, executorService)
-                .whenCompleteAsync({ executedJob, throwable ->
+                .supplyAsync({ submitJob(job) }, executorService)
+                .whenCompleteAsync({ submittedJob, throwable ->
                     if (throwable != null) {
-                        handleJobExecutionError(job, throwable)
+                        handleJobSubmissionFailed(job, throwable)
                     } else {
-                        handleJobExecuted(executedJob)
+                        handleJobSubmitted(submittedJob)
                     }
                 }, executorService)
         }
 
-        private fun executeJob(runningJob: Job): Job {
-            logger.info("Starting executing job ${runningJob.id}")
-            return executor.execute(runningJob)
+        private fun submitJob(job: Job): Job {
+            logger.info("Submitting job ${job.id}...")
+            return executor.submit(job)
         }
 
-        private fun handleJobExecuted(job: Job) {
+        private fun handleJobSubmitted(job: Job) {
             store.save(job)
 
-            if (job.state == JobState.INVOKED) {
-                logger.info("Job ${job.id} was invoked successfully")
+            if (job.state == JobState.SUBMITTED) {
+                logger.info("Job ${job.id} was submitted successfully")
             } else {
-                logger.error("Job ${job.id} invocation failed with error ${job.executionError}")
+                logger.error("Job ${job.id} submission failed with error ${job.submissionError}")
             }
         }
 
-        private fun handleJobExecutionError(job: Job, throwable: Throwable) {
-            logger.error("Error while executing job ${job.id}", throwable)
-            val failedJob = job.failAt(clock.instant(), throwable.message ?: "unknown execution error")
+        private fun handleJobSubmissionFailed(job: Job, throwable: Throwable) {
+            logger.error("Error while submitting job ${job.id}", throwable)
+            val failedJob = job.submissionFailAt(clock.instant(), throwable.message ?: "unknown error")
             store.save(failedJob)
         }
     }

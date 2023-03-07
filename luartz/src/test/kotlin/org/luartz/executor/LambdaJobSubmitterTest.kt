@@ -12,14 +12,14 @@ import software.amazon.awssdk.services.lambda.LambdaClient
 import software.amazon.awssdk.services.lambda.model.InvokeRequest
 import software.amazon.awssdk.services.lambda.model.InvokeResponse
 
-class LambdaJobExecutorTest {
+class LambdaJobSubmitterTest {
     private lateinit var lambdaClient: LambdaClient
-    private lateinit var executor: JobExecutor
+    private lateinit var executor: JobSubmitter
 
     @BeforeEach
     fun setup() {
         lambdaClient = mock()
-        executor = LambdaJobExecutor(lambdaClient)
+        executor = LambdaJobSubmitter(lambdaClient)
     }
 
     @Test
@@ -32,10 +32,10 @@ class LambdaJobExecutorTest {
         whenever(lambdaClient.invoke(any<InvokeRequest>())).thenReturn(response)
 
         // When
-        val executedJob = executor.execute(runningJob)
+        val executedJob = executor.submit(runningJob)
 
         // Then
-        assertThat(executedJob.state).isEqualTo(JobState.INVOKED)
+        assertThat(executedJob.state).isEqualTo(JobState.SUBMITTED)
     }
 
     @Test
@@ -46,7 +46,7 @@ class LambdaJobExecutorTest {
         whenLambdaInvokedWithError(any(), RuntimeException(executionError))
 
         // When
-        assertThrows<RuntimeException>(executionError) { executor.execute(runningJob) }
+        assertThrows<RuntimeException>(executionError) { executor.submit(runningJob) }
     }
 
     @Test
@@ -57,7 +57,7 @@ class LambdaJobExecutorTest {
         whenLambdaInvoked(any(), response)
 
         // When
-        executor.execute(runningJob)
+        executor.submit(runningJob)
 
         // Then
         argumentCaptor<InvokeRequest> {
@@ -68,7 +68,7 @@ class LambdaJobExecutorTest {
             assertThat(request.functionName()).isEqualTo(runningJob.function.name)
 
             // Verify payload
-            val payload = defaultJson().parse(request.payload().asUtf8String(), JobExecutionPayload::class.java)
+            val payload = defaultJson().parse(request.payload().asUtf8String(), FunctionInvocationPayload::class.java)
             assertThat(payload.job.id).isEqualTo(runningJob.id)
             assertThat(payload.job.name).isEqualTo(runningJob.name)
             assertThat(payload.payload).isEqualTo(runningJob.payload)

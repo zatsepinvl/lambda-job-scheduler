@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.luartz.deployer.JobDeployer
-import org.luartz.executor.JobExecutor
+import org.luartz.executor.JobSubmitter
 import org.luartz.job.Job
 import org.luartz.job.JobFunction
 import org.luartz.job.JobState
@@ -24,7 +24,7 @@ import java.time.Instant
 class SchedulerImplTest {
     private lateinit var store: MutableJobStore
     private lateinit var deployer: JobDeployer
-    private lateinit var executor: JobExecutor
+    private lateinit var executor: JobSubmitter
     private lateinit var scheduler: Scheduler
 
     @BeforeEach
@@ -46,7 +46,7 @@ class SchedulerImplTest {
 
         // Then
         argumentCaptor<Job> {
-            verify(executor).execute(capture())
+            verify(executor).submit(capture())
 
             val job = firstValue
             assertThat(job.name).isEqualTo(template.jobName)
@@ -70,7 +70,7 @@ class SchedulerImplTest {
             // Save on scheduled, run and then executed successfully
             assertThat(allValues.map { it.state }).containsExactly(
                 JobState.SCHEDULED,
-                JobState.INVOKED
+                JobState.SUBMITTED
             )
         }
     }
@@ -99,7 +99,7 @@ class SchedulerImplTest {
             assertThat(firstValue.state).isEqualTo(JobState.SCHEDULED)
         }
 
-        verify(executor, never()).execute(any())
+        verify(executor, never()).submit(any())
     }
 
     private fun givenTestJobTemplate(trigger: Trigger = NowTrigger()): JobTemplate {
@@ -112,10 +112,10 @@ class SchedulerImplTest {
         )
     }
 
-    private fun JobExecutor.mockSuccessInvocation() {
-        whenever(this.execute(any())).thenAnswer {
+    private fun JobSubmitter.mockSuccessInvocation() {
+        whenever(this.submit(any())).thenAnswer {
             val job = it.arguments[0] as Job
-            job.invokedAt(Instant.now())
+            job.submitAt(Instant.now())
         }
     }
 

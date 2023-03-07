@@ -4,12 +4,12 @@ import org.luartz.store.JobStore
 
 interface Scheduler {
     /**
-     * Schedule a job for execution. Do not take any effect until #start is invoked.
+     * Schedule a job for submission. Do not take any effect until #start is invoked.
      */
     fun schedule(template: JobTemplate)
 
     /**
-     * Unschedule a job from execution. Do not affect already running jobs.
+     * Unschedule a job from submission. Do not affect already running jobs.
      */
     fun unschedule(templateId: String)
 

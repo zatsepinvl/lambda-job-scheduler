@@ -9,5 +9,5 @@ internal class DeploymentQueue : LinkedBlockingQueue<JobTemplate>()
 
 internal class ScheduleQueue : LinkedBlockingQueue<JobTemplate>()
 
-internal class ExecutionQueue : LinkedBlockingQueue<Job>()
+internal class SubmissionQueue : LinkedBlockingQueue<Job>()
 

@@ -168,7 +168,8 @@ internal class SchedulerImpl(
             scheduledExecutorService.schedule(
                 {
                     try {
-                        submitForExecution(job, template)
+                        executionQueue.add(job)
+                        template.trigger.whenFired()
                     } catch (throwable: Throwable) {
                         logger.error("Error while submitting job ${job.id} for execution", throwable)
                     } finally {
@@ -188,11 +189,6 @@ internal class SchedulerImpl(
             return template
                 .toJobWithId(jobId, clock.instant())
                 .scheduleExecutionAt(scheduleExecutionAt)
-        }
-
-        private fun submitForExecution(job: Job, template: JobTemplate) {
-            executionQueue.add(job)
-            template.trigger.whenFired()
         }
     }
 

@@ -1,6 +1,6 @@
 package org.luartz.deployer
 
-import org.luartz.util.ConcurrentHashLock
+import org.luartz.util.lock.ConcurrentHashLock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.core.SdkBytes

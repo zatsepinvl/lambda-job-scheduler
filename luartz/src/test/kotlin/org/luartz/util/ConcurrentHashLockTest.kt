@@ -2,6 +2,7 @@ package org.luartz.util
 
 import com.google.common.truth.Truth.assertThat
 import org.junit.jupiter.api.Test
+import org.luartz.util.lock.ConcurrentHashLock
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.random.Random

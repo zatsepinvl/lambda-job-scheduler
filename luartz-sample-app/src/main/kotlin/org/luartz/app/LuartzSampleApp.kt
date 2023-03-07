@@ -29,7 +29,7 @@ fun main(args: Array<String>) {
 class AppRunner : CommandLineRunner {
     override fun run(vararg args: String?) {
         // Init for test
-        //val scheduler = SchedulerFabric.create(InMemoryJobStore(), DummyJobExecutor(), DummyJobDeployer())
+        // val scheduler = SchedulerFabric.create(InMemoryJobStore(), DummyJobDeployer(), DummyJobExecutor())
 
         // Init for real lambda invocation
         val scheduler = SchedulerFabric.createDefault()
@@ -50,15 +50,15 @@ class AppRunner : CommandLineRunner {
 
         // Schedule a recurrent job
         val intervalTrigger = IntervalTrigger(startAt = Instant.now(), interval = Duration.ofSeconds(5))
-        scheduler.schedule(
-            JobTemplate(
-                id = "RecurrentTestJob",
-                jobName = "RecurrentTestJob",
-                function = functionDefinition,
-                payload = payload,
-                trigger = intervalTrigger
-            )
+        val jobTemplate = JobTemplate(
+            id = "RecurrentTestJob",
+            jobName = "RecurrentTestJob",
+            function = functionDefinition,
+            payload = payload,
+            trigger = intervalTrigger
         )
+
+        scheduler.schedule(jobTemplate)
 
         // Schedule a one-off job
         scheduler.schedule(

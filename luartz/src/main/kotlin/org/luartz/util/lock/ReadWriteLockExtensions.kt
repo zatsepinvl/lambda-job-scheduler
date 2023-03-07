@@ -1,4 +1,4 @@
-package org.luartz.util
+package org.luartz.util.lock
 
 import java.util.concurrent.Callable
 import java.util.concurrent.locks.ReadWriteLock

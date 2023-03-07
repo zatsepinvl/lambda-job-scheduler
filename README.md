@@ -102,7 +102,7 @@ See [luartz-sample-app](luartz-sample-app/src/main/kotlin/org/luartz/app/LuartzS
 * **JobTemplate** - template to create a job from.
 * **JobStore** - repository for created/running/executed jobs.
 * **Trigger** - a component that determines the schedule upon which a given Job will be performed.
-* **LambdaDefinition** - data class for defining required data to deploy and invoke a particular AWS Lambda function.
+* **FunctionDefinition** - data class for defining required data to deploy and invoke a particular AWS Lambda function.
 
 ### Logical Architecture
 ![logical-architecture.png](assets/logical-architecture.png)
